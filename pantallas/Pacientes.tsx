@@ -1,17 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ImageBackground, Platform, Dimensions, Animated, Modal, TextInput, Button, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ImageBackground, Platform, Animated, Button } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
-import { obtenerPacientes} from '../firebase/firestoreService';
-
-
-const { width, height } = Dimensions.get('window');
+import { obtenerPacientes, eliminarPaciente } from '../firebase/firestoreService';
+import { useWindowDimensions } from 'react-native';
+import { useUsuario } from '../context/UsuarioContext';
 
 export default function Pacientes({ navigation }: any) {
-  const esWeb = Platform.OS === 'web';
   const [pacientes, setPacientes] = useState<any[]>([]);
   const [expandidoId, setExpandidoId] = useState<string | null>(null);
   const [alturaAnimada] = useState(new Animated.Value(180));
+  const { width } = useWindowDimensions();
+  const cardSize = width < 500 ? 150 : 180;
+  const esWeb = Platform.OS === 'web';
+  const { usuario } = useUsuario();
 
   useEffect(() => {
     const cargarPacientes = async () => {
@@ -38,6 +40,20 @@ export default function Pacientes({ navigation }: any) {
     }
   };
 
+  const manejarEliminar = async (id: string) => {
+    try {
+      await eliminarPaciente(id);
+      const datosActualizados = await obtenerPacientes();
+      setPacientes(datosActualizados);
+    } catch (error) {
+      alert('Error al eliminar el paciente');
+    }
+  };
+
+  const manejarEditar = (paciente: any) => {
+    navigation.navigate('EditarPaciente', { paciente });
+  };
+
   const calcularEdad = (fechaNacimiento: any) => {
     const hoy = new Date();
     const nacimiento = typeof fechaNacimiento.toDate === 'function'
@@ -46,44 +62,32 @@ export default function Pacientes({ navigation }: any) {
 
     let edad = hoy.getFullYear() - nacimiento.getFullYear();
     const m = hoy.getMonth() - nacimiento.getMonth();
-    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) {
-      edad--;
-    }
+    if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
     return edad;
   };
 
   const renderPaciente = ({ item }: any) => {
     const expandido = expandidoId === item.id;
-    const colorFondo = item.estado === 'Activo'
-      ? 'rgba(46, 204, 113, 0.3)'
-      : 'rgba(231, 76, 60, 0.3)';
-
+    const colorFondo = item.estado === 'Activo' ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)';
     return (
-      <Animated.View style={[styles.card, expandido && styles.cardExpandido, { backgroundColor: colorFondo, height: expandido ? alturaAnimada : 180 }]}>
+      <Animated.View style={[styles.card, expandido && styles.cardExpandido, { backgroundColor: colorFondo, height: expandido ? undefined : cardSize, width: cardSize }]}>
         <TouchableOpacity onPress={() => manejarExpandir(item.id)} style={{ width: '100%', alignItems: 'center' }}>
           <Ionicons name="person-circle-outline" size={50} color="#2b7a78" />
           <Text style={styles.nombre}>{item.nombre} {item.apellidos}</Text>
           <Text style={styles.datosCentrado}>{calcularEdad(item.fechaNacimiento)} años</Text>
           <Text style={styles.datosCentrado}>{item.diagnostico}</Text>
-
           {expandido && (
             <View style={styles.detallesExtra}>
-              <Text style={styles.datosCentrado}>DNI: {item.dni || '—'}</Text>
+              <Text style={styles.datosCentrado}>DNI: {item.dni}</Text>
               <Text style={styles.datosCentrado}>Email: {item.email}</Text>
               <Text style={styles.datosCentrado}>Teléfono: {item.telefono}</Text>
-              <Text style={styles.datosCentrado}>Beca: {item.beca ? `Sí (${item.tipoBeca || 'Sin especificar'})` : 'No'}</Text>
-              <Text style={styles.datosCentrado}>Pagado: {item.pagado ? 'Sí' : 'No'}</Text>
-              {item.pagado && (
-                <>
-                  <Text style={styles.datosCentrado}>Método: {item.metodoPago}</Text>
-                  <Text style={styles.datosCentrado}>Recibo: {item.recibo ? 'Sí' : 'No'}</Text>
-                </>
-              )}
-              <Text style={styles.datosCentrado}>Estado: {item.estado}</Text>
-
               <View style={styles.iconosAcciones}>
-                <Ionicons name="create-outline" size={28} color="#2b7a78" style={styles.icono} />
-                <Ionicons name="trash-outline" size={28} color="#e74c3c" style={styles.icono} />
+                <TouchableOpacity onPress={() => manejarEditar(item)}>
+                  <Ionicons name="create-outline" size={28} color="#2b7a78" style={styles.icono} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => manejarEliminar(item.id)}>
+                  <Ionicons name="trash-outline" size={28} color="#e74c3c" style={styles.icono} />
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -100,10 +104,13 @@ export default function Pacientes({ navigation }: any) {
           <Text style={styles.navText}>Inicio</Text>
         </TouchableOpacity>
         <Text style={styles.navTitle}>Pacientes</Text>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
-          <Text style={styles.navText}>Usuario</Text>
-        </TouchableOpacity>
+        <TouchableOpacity
+  style={styles.navItem}
+  onPress={() => navigation.navigate('Perfil')}
+>
+  <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
+  <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
+</TouchableOpacity>
       </View>
 
       {esWeb ? (
@@ -127,18 +134,8 @@ export default function Pacientes({ navigation }: any) {
       )}
 
       <View style={styles.contenido}>
-        <FlatList
-          data={pacientes}
-          renderItem={renderPaciente}
-          keyExtractor={(item, index) => index.toString()}
-          numColumns={2}
-          contentContainerStyle={styles.lista}
-        />
-        <Button
-  title="➕ Añadir Paciente"
-  onPress={() => navigation.navigate('AltaPaciente')}
-  color="#2b7a78"
-/>
+        <FlatList data={pacientes} renderItem={renderPaciente} keyExtractor={(item, index) => index.toString()} numColumns={2} contentContainerStyle={styles.lista} />
+        <Button title="➕ Añadir Paciente" onPress={() => navigation.navigate('AltaPaciente')} color="#2b7a78" />
       </View>
     </View>
   );
@@ -196,16 +193,15 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 15,
     alignItems: 'center',
-    width: 150,
-    height: 180,
     justifyContent: 'center',
     elevation: 5,
+    overflow: 'hidden',
   },
   cardExpandido: {
-    height: 'auto',
     width: 320,
     alignItems: 'center',
     padding: 25,
+    height: 'auto', 
   },
   nombre: {
     marginTop: 10,
@@ -213,13 +209,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2b7a78',
     textAlign: 'center',
-  },
-  datos: {
-    fontSize: 14,
-    color: '#555',
-    textAlign: 'left',
-    width: '100%',
-    marginTop: 2,
   },
   datosCentrado: {
     fontSize: 14,

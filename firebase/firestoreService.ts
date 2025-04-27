@@ -1,10 +1,19 @@
-import { getFirestore, collection, getDocs, addDoc} from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc} from 'firebase/firestore';
 import { app } from './firebaseConfig';
+import {doc} from 'firebase/firestore';
 
-// Exportamos instancia de la base de datos
 export const db = getFirestore(app);
 
-// Función para obtener todos los pacientes
+export const agregarUsuario = async (usuario: any) => {
+  try {
+    await addDoc(collection(db, 'usuarios'), usuario);
+    console.log('Usuario agregado a Firestore correctamente');
+  } catch (error) {
+    console.error('Error al agregar usuario:', error);
+    throw error;
+  }
+};
+
 export const obtenerPacientes = async () => {
   try {
     const pacientesRef = collection(db, 'pacientes');
@@ -27,5 +36,64 @@ export const agregarPaciente = async (paciente: any) => {
     await addDoc(collection(db, 'pacientes'), paciente);
   } catch (error) {
     console.error('Error al agregar paciente:', error);
+  }
+};
+export const eliminarPaciente = async (id: string) => {
+  try {
+    const pacienteRef = doc(db, 'pacientes', id);
+    await deleteDoc(pacienteRef);
+    console.log('Paciente eliminado con éxito');
+  } catch (error) {
+    console.error('Error al eliminar paciente:', error);
+    throw error;
+  }
+};
+export const actualizarPaciente = async (id: string, datosActualizados: any) => {
+  try {
+    const ref = doc(db, 'pacientes', id);
+    await updateDoc(ref, datosActualizados);
+  } catch (error) {
+    console.error('Error al actualizar paciente:', error);
+    throw error;
+  }
+};
+
+export const buscarUsuarioPorEmail = async (email: string) => {
+  try {
+    const usuariosRef = collection(db, 'usuarios');
+    const snapshot = await getDocs(usuariosRef);
+
+    const usuarios = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...(doc.data() as any), 
+    }));
+
+    return usuarios.find((u) => u.email === email) || null;
+  } catch (error) {
+    console.error('Error al buscar usuario:', error);
+    return null;
+  }
+};
+
+export const obtenerNombreEmpresaPorId = async (empresaId: string): Promise<string> => {
+  try {
+    const ref = doc(db, 'empresas', empresaId);
+    const snap = await getDoc(ref);
+    if (snap.exists()) return snap.data().nombreEmpresa;  
+    return 'Empresa no encontrada';
+  } catch (error) {
+    console.error('Error al obtener empresa:', error);
+    return 'Error de empresa';
+  }
+};
+
+
+export const actualizarUsuario = async (uid: string, nombre: string, apellidos: string) => {
+  try {
+    const ref = doc(db, 'usuarios', uid);
+    await updateDoc(ref, { nombre, apellidos });
+  } catch (error) {
+    console.error('Error al actualizar nombre del usuario:', error);
+    throw error;
   }
 };

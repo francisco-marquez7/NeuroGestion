@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert, TouchableOpacity, Dimensions, ImageBackground, Platform } from 'react-native';
 import { iniciarSesion } from '../firebase/auth';
+import { useUsuario } from '../context/UsuarioContext';
+import { buscarUsuarioPorEmail } from '../firebase/firestoreService';
 import { Video, ResizeMode } from 'expo-av';
 
 const { width, height } = Dimensions.get('window');
@@ -8,11 +10,19 @@ const { width, height } = Dimensions.get('window');
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
+  const { setUsuario } = useUsuario(); // <<--- Añadido
   const esWeb = Platform.OS === 'web';
 
   const manejarLogin = async () => {
     try {
       await iniciarSesion(email, clave);
+
+      // 👉 Cargar datos de usuario de Firestore
+      const datosUsuario = await buscarUsuarioPorEmail(email);
+      if (datosUsuario) {
+        setUsuario(datosUsuario);
+      }
+
       Alert.alert('Inicio de sesión correcto', 'Sesión iniciada correctamente.');
       navigation.replace('Inicio');
     } catch (error: any) {
@@ -22,8 +32,6 @@ export default function Login({ navigation }: any) {
 
   return (
     <View style={estilos.contenedor}>
-
-      {/* Fondo dinámico */}
       {esWeb ? (
         <ImageBackground
           source={require('../assets/imagenes/imagenFondoLogin.png')}
@@ -44,7 +52,6 @@ export default function Login({ navigation }: any) {
         />
       )}
 
-      {/* Formulario */}
       <View style={estilos.formulario}>
         <Text style={estilos.titulo}>NeuroGestión</Text>
 
@@ -69,7 +76,6 @@ export default function Login({ navigation }: any) {
           <Button title="Iniciar sesión" onPress={manejarLogin} color="#2b7a78" />
         </View>
 
-        {/* Links horizontalmente alineados */}
         <View style={estilos.links}>
           <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
             <Text style={estilos.linkTexto}>Registrarse</Text>
@@ -81,7 +87,6 @@ export default function Login({ navigation }: any) {
             <Text style={estilos.linkTexto}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
         </View>
-
       </View>
     </View>
   );
@@ -94,13 +99,19 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
   },
   fondoWeb: {
-    ...StyleSheet.absoluteFillObject,
-    top: -50, 
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
   },
   formulario: {
     width: '85%',
     maxWidth: 400,
-    backgroundColor: 'rgba(255,255,255,0.75)', 
+    backgroundColor: 'rgba(255,255,255,0.75)',
     padding: 20,
     borderRadius: 15,
     shadowColor: '#000',

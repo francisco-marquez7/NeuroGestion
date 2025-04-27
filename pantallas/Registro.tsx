@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet, Alert, TouchableOpacity, Dimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { registrarUsuario, comprobarUsuarioExistente } from '../firebase/auth';
+import { agregarUsuario } from '../firebase/firestoreService';
 import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons'; // Asegúrate de tener instalado @expo/vector-icons
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
@@ -30,7 +31,16 @@ export default function Registro() {
         return;
       }
 
-      await registrarUsuario(email, clave);
+      const credenciales = await registrarUsuario(email, clave);
+
+      // 👇 Después de registrar en auth, crear el usuario en Firestore
+      await agregarUsuario({
+        email: email,
+        nombre: email.split('@')[0], // De momento el nombre será el email antes de @
+        empresaId: '', // Podrías dejarlo vacío para luego asignarlo
+        rol: 'profesional' // Rol por defecto
+      });
+
       Alert.alert('Usuario creado', 'El usuario se ha registrado correctamente.');
       navigation.replace('Login');
     } catch (error: any) {
@@ -48,26 +58,23 @@ export default function Registro() {
 
   return (
     <View style={styles.contenedor}>
+      <Video
+        source={require('../assets/videos/fondoLogin.mp4')}
+        rate={1.0}
+        volume={1.0}
+        isMuted
+        resizeMode={ResizeMode.COVER}
+        shouldPlay
+        isLooping
+        style={[
+          StyleSheet.absoluteFillObject,
+          {
+            transform: [{ translateX: -50 }],
+          },
+        ]}
+        pointerEvents="none"
+      />
 
-<Video
-  source={require('../assets/videos/fondoLogin.mp4')}
-  rate={1.0}
-  volume={1.0}
-  isMuted
-  resizeMode={ResizeMode.COVER}
-  shouldPlay
-  isLooping
-  style={[
-    StyleSheet.absoluteFillObject,
-    {
-      transform: [{ translateX: -50 }],
-    },
-  ]}
-  pointerEvents="none" 
-/>
-
-
-      {/* Barra superior */}
       <View style={styles.barraSuperior}>
         <TouchableOpacity onPress={() => navigation.navigate('Login')}>
           <Ionicons name="arrow-back" size={28} color="#fff" />
@@ -75,7 +82,6 @@ export default function Registro() {
         <Text style={styles.tituloBarra}>Login</Text>
       </View>
 
-      {/* Formulario */}
       <View style={styles.formulario}>
         <Text style={styles.titulo}>Registro</Text>
 
@@ -109,7 +115,7 @@ export default function Registro() {
 const styles = StyleSheet.create({
   contenedor: {
     flex: 1,
-    backgroundColor: '#000', // De fondo negro mientras carga el video
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },

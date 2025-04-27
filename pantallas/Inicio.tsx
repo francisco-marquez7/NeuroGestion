@@ -1,39 +1,35 @@
 import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, Platform, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, Platform, Dimensions, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons'; 
+import { useUsuario } from '../context/UsuarioContext';
 
 import { useNavigation } from '@react-navigation/native';
 
-
-const { width, height } = Dimensions.get('window');
-
 export default function Inicio() {
+  const { width } = useWindowDimensions();
+  const botonSize = width < 500 ? 140 : 180;
   const navigation = useNavigation();
-  
+  const { usuario } = useUsuario();
   const esWeb = Platform.OS === 'web';
 
   return (
+    
     <View style={styles.contenedor}>
-      
-      {/* Barra superior */}
-      <View style={styles.navbar}>
-        <View style={styles.navLeft}>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="home-outline" size={24} color="#ffffff" />
-            <Text style={styles.navText}>Inicio</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.navTitle}>NeuroGestión</Text>
-
-        <View style={styles.navRight}>
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
-            <Text style={styles.navText}>Usuario</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+          <View style={styles.navbar}>
+            <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Inicio')}>
+              <Ionicons name="home-outline" size={24} color="#ffffff" />
+              <Text style={styles.navText}>Inicio</Text>
+            </TouchableOpacity>
+            <Text style={styles.navTitle}>Bienvenido a NeurogGestion</Text>
+            <TouchableOpacity
+      style={styles.navItem}
+      onPress={() => navigation.navigate('Perfil')}
+    >
+      <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
+      <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
+    </TouchableOpacity>
+          </View>
 
       {/* Fondo dinámico */}
       {esWeb ? (
@@ -59,22 +55,22 @@ export default function Inicio() {
       {/* Contenido */}
       <View style={styles.contenido}>
         <View style={styles.botonera}>
-        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Pacientes')}>
+        <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]} onPress={() => navigation.navigate('Pacientes')}>
             <Ionicons name="people-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Pacientes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.boton}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
             <Ionicons name="calendar-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Citas</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.boton}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
             <Ionicons name="document-text-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Documentos</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.boton}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
             <Ionicons name="folder-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Sesiones</Text>
           </TouchableOpacity>
@@ -141,8 +137,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
     alignItems: 'center',
-    width: 600, 
+    maxWidth: 600,
+    alignSelf: 'center',
+    paddingHorizontal: 10,
   },
+  
   boton: {
     backgroundColor: 'rgba(255, 255, 255, 0.65)',
     margin: 50,
@@ -150,11 +149,9 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 180, 
-    height: 180,
     elevation: 6,
   },
-   
+  
   botonTexto: {
     marginTop: 10,
     fontSize: 16,
