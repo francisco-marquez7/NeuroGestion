@@ -33,12 +33,11 @@ export default function Registro() {
 
       const credenciales = await registrarUsuario(email, clave);
 
-      // 👇 Después de registrar en auth, crear el usuario en Firestore
       await agregarUsuario({
         email: email,
-        nombre: email.split('@')[0], // De momento el nombre será el email antes de @
-        empresaId: '', // Podrías dejarlo vacío para luego asignarlo
-        rol: 'profesional' // Rol por defecto
+        nombre: email.split('@')[0], 
+        empresaId: '', 
+        rol: 'profesional' 
       });
 
       Alert.alert('Usuario creado', 'El usuario se ha registrado correctamente.');

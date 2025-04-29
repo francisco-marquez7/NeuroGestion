@@ -103,10 +103,8 @@ export const obtenerCitasPorUsuario = async (usuario: any) => {
 
     let q;
     if (usuario.rol === 'admin' || usuario.rol === 'company_admin') {
-      // Admins ven todas las citas
       q = query(citasRef);
     } else {
-      // Profesionales ven solo sus citas
       q = query(citasRef, where('usuarioId', '==', usuario.id));
     }
 

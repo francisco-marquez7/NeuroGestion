@@ -10,14 +10,12 @@ const { width, height } = Dimensions.get('window');
 export default function Login({ navigation }: any) {
   const [email, setEmail] = useState('');
   const [clave, setClave] = useState('');
-  const { setUsuario } = useUsuario(); // <<--- Añadido
+  const { setUsuario } = useUsuario();
   const esWeb = Platform.OS === 'web';
 
   const manejarLogin = async () => {
     try {
       await iniciarSesion(email, clave);
-
-      // 👉 Cargar datos de usuario de Firestore
       const datosUsuario = await buscarUsuarioPorEmail(email);
       if (datosUsuario) {
         setUsuario(datosUsuario);

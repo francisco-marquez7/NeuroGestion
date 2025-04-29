@@ -65,16 +65,11 @@ export default function AltaPaciente() {
       resizeMode="cover"
     >
       <View style={styles.navbar}>
-  {/* Botón volver */}
   <TouchableOpacity style={styles.navItem} onPress={() => navigation.goBack()}>
     <Ionicons name="arrow-back-outline" size={24} color="#ffffff" />
     <Text style={styles.navText}>Volver</Text>
   </TouchableOpacity>
-
-  {/* Título centrado */}
   <Text style={styles.navTitle}>Alta de Paciente</Text>
-
-  {/* Icono usuario */}
   <TouchableOpacity style={styles.navItem}>
     <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
     <Text style={styles.navText}>Usuario</Text>

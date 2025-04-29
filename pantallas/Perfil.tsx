@@ -105,8 +105,6 @@ export default function Perfil() {
 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
   <ScrollView contentContainerStyle={styles.scrollContainer}>
     <View style={styles.card}>
-      
-      {/* Nombre + Botón de Logout en la MISMA FILA */}
       <View style={styles.nombreFila}>
         <View>
           <Text style={styles.label}>Nombre:</Text>

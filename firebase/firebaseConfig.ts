@@ -1,4 +1,3 @@
-// firebase/firebaseConfig.ts
 import { initializeApp } from "firebase/app";
 
 const firebaseConfig = {
@@ -10,5 +9,4 @@ const firebaseConfig = {
   appId: "1:636983413517:web:3c1bbafa0ab9659c9c7e44",
 };
 
-// Inicializamos Firebase y lo exportamos
 export const app = initializeApp(firebaseConfig);

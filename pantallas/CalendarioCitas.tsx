@@ -46,16 +46,13 @@ snapshotPacientes.docs.forEach(doc => {
   pacientesMap.set(doc.id, doc.data().nombre);
 });
 
-// Obtener usuarios
 const snapshotUsuarios = await getDocs(collection(db, 'usuarios'));
 const usuariosMap = new Map();
 snapshotUsuarios.docs.forEach(doc => {
   const data = doc.data();
-  const uid = data.uid || doc.id; // Si tienes uid guardado en el doc, úsalo
+  const uid = data.uid || doc.id; 
   usuariosMap.set(uid, data.nombre);
 });
-
-      // Añadir nombrePaciente y nombreProfesional a cada cita
       const citasConNombres = citasUsuario.map(cita => ({
         ...cita,
         nombrePaciente: pacientesMap.get(cita.pacienteId) || 'Paciente desconocido',
@@ -134,11 +131,9 @@ snapshotUsuarios.docs.forEach(doc => {
     }}
   />
 </View>
-
-      {/* Si un día está seleccionado */}
       {diaSeleccionado && (
         <ScrollView style={styles.citasDiaContainer}>
-          <Text style={styles.tituloDia}>Citas del {diaSeleccionado}</Text>
+          <Text style={styles.tituloDia}>Citas del {diaSeleccionado} :</Text>
           {citas.filter(cita => cita.fechaInicio.toDate().toISOString().split('T')[0] === diaSeleccionado)
             .map((cita, index) => (
               <View key={index} style={styles.citaItem}>

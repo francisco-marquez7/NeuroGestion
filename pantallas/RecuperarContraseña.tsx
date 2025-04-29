@@ -26,8 +26,6 @@ export default function RecuperarContraseña({ navigation }: any) {
 
   return (
     <View style={styles.contenedor}>
-      
-      {/* 🔵 Fondo dinámico */}
       {esWeb ? (
         <ImageBackground
           source={require('../assets/imagenes/imagenFondoLogin.png')}
@@ -47,8 +45,6 @@ export default function RecuperarContraseña({ navigation }: any) {
           pointerEvents="none"
         />
       )}
-
-      {/* 🔵 Formulario */}
       <View style={styles.formulario}>
         <Text style={styles.titulo}>Recuperar Contraseña</Text>
 
