@@ -1,6 +1,5 @@
-import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc} from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc, query, where, doc } from 'firebase/firestore';
 import { app } from './firebaseConfig';
-import {doc} from 'firebase/firestore';
 
 export const db = getFirestore(app);
 
@@ -95,5 +94,31 @@ export const actualizarUsuario = async (uid: string, nombre: string, apellidos: 
   } catch (error) {
     console.error('Error al actualizar nombre del usuario:', error);
     throw error;
+  }
+};
+
+export const obtenerCitasPorUsuario = async (usuario: any) => {
+  try {
+    const citasRef = collection(db, 'citas');
+
+    let q;
+    if (usuario.rol === 'admin' || usuario.rol === 'company_admin') {
+      // Admins ven todas las citas
+      q = query(citasRef);
+    } else {
+      // Profesionales ven solo sus citas
+      q = query(citasRef, where('usuarioId', '==', usuario.id));
+    }
+
+    const querySnapshot = await getDocs(q);
+    const citas = querySnapshot.docs.map(citaDoc => ({
+      id: citaDoc.id,
+      ...(citaDoc.data() as any),
+    }));
+    
+    return citas;
+  } catch (error) {
+    console.error('Error obteniendo citas:', error);
+    return [];
   }
 };

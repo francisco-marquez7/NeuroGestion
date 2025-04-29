@@ -11,6 +11,7 @@ import Pacientes from './pantallas/Pacientes';
 import AltaPaciente from './pantallas/AltaPaciente';
 import EditarPaciente from './pantallas/EditarPaciente';
 import Perfil from './pantallas/Perfil';
+import CalendarioCitas from './pantallas/CalendarioCitas';
 
 const Stack = createStackNavigator();
 
@@ -27,7 +28,7 @@ export default function App() {
           <Stack.Screen name="AltaPaciente" component={AltaPaciente} />
           <Stack.Screen name="EditarPaciente" component={EditarPaciente} />
           <Stack.Screen name="Perfil" component={Perfil} />
-          
+          <Stack.Screen name="CalendarioCitas" component={CalendarioCitas}/>
         </Stack.Navigator>
       </NavigationContainer>
     </UsuarioProvider>

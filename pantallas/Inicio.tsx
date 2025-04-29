@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, Platform, Dimensions, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, Platform, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons'; 
 import { useUsuario } from '../context/UsuarioContext';
@@ -60,7 +60,7 @@ export default function Inicio() {
             <Text style={styles.botonTexto}>Pacientes</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}onPress={() => navigation.navigate('CalendarioCitas')}>
             <Ionicons name="calendar-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Citas</Text>
           </TouchableOpacity>
