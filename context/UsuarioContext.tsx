@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface Usuario {
-  id: string;              // ID del documento en Firestore
+  id: string;              
   email: string;
   nombre: string;
   apellidos?: string;
