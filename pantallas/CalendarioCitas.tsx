@@ -256,7 +256,7 @@ const citasConNombres = citasUsuario
 )          
             .map((cita, index) => (
     <View key={index} style={styles.citaItem}>
-      <View style={[styles.citaItem, { flexDirection: 'row', alignItems: 'center',  justifyContent: 'space-between',}]}>
+     <View style={[styles.citaItem, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
     <View style={{ flex: 1 }}>
         <Text style={styles.citaHora}>
             {new Date(cita.fechaInicio.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(cita.fechaFin.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -265,8 +265,7 @@ const citasConNombres = citasUsuario
             {cita.nombrePaciente} (con {cita.nombreProfesional})
         </Text>
     </View>
-
-    <View style={{ flexDirection: 'row', alignItems: 'center',  justifyContent: 'space-between'}}>
+    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => abrirModalEditar(cita)}>
             <Ionicons name="create-outline" size={22} color="#2b7a78" style={{ marginLeft: 15 }} />
         </TouchableOpacity>
@@ -445,6 +444,102 @@ const citasConNombres = citasUsuario
 </TouchableOpacity>
     </View>
   </View>
+</Modal>
+<Modal visible={modalEditarVisible} transparent animationType="slide">
+    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
+        <View style={{
+            backgroundColor: 'white',
+            padding: 20,
+            borderRadius: 10,
+            maxWidth: 500,
+            width: '100%',
+            alignSelf: 'center',
+        }}>
+            <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#2b7a78' }}>
+                Editar Cita
+            </Text>
+            <Text>Paciente:</Text>
+            <Picker
+                selectedValue={pacienteSeleccionado}
+                onValueChange={(itemValue) => setPacienteSeleccionado(itemValue)}
+            >
+                {pacientes.map(p => <Picker.Item key={p.id} label={p.nombre} value={p.id} />)}
+            </Picker>
+            <Text>Profesional:</Text>
+            <Picker
+                selectedValue={usuarioSeleccionado}
+                onValueChange={(itemValue) => setUsuarioSeleccionado(itemValue)}
+            >
+                {usuarios.map(u => <Picker.Item key={u.id} label={u.nombre} value={u.id} />)}
+            </Picker>
+            <Text>Estado:</Text>
+            <Picker
+                selectedValue={estadoCita}
+                onValueChange={(itemValue) => setEstadoCita(itemValue)}
+            >
+                <Picker.Item label="Pendiente" value="pendiente" />
+                <Picker.Item label="Realizada" value="realizada" />
+                <Picker.Item label="Cancelada" value="cancelada" />
+            </Picker>
+            <Text>Fecha de inicio:</Text>
+            {esWeb ? (
+                <input
+                    type="datetime-local"
+                    value={fechaInicio ? moment(fechaInicio).format('YYYY-MM-DDTHH:mm') : ''}
+                    onChange={(e) => {
+                        const inputValue = e.target.value;
+                        const parsedDate = new Date(inputValue);
+                        if (inputValue && !isNaN(parsedDate.getTime())) {
+                            setFechaInicio(parsedDate);
+                        } else {
+                            setFechaInicio(null);
+                        }
+                    }}
+                    style={styles.inputWeb}
+                />
+            ) : (
+                <TouchableOpacity style={styles.fechaInput} onPress={() => setMostrarPickerInicio(true)}>
+                    <Text style={styles.fechaTexto}>
+                        {fechaInicio ? moment(fechaInicio).format('D/M/YYYY, HH:mm') : 'Seleccionar fecha de inicio'}
+                    </Text>
+                </TouchableOpacity>
+            )}
+
+            {/* Campo de fecha de fin */}
+            <Text>Fecha de fin:</Text>
+            {esWeb ? (
+                <input
+                    type="datetime-local"
+                    value={fechaFin ? moment(fechaFin).format('YYYY-MM-DDTHH:mm') : ''}
+                    onChange={(e) => {
+                        const inputValue = e.target.value;
+                        const parsedDate = new Date(inputValue);
+                        if (inputValue && !isNaN(parsedDate.getTime())) {
+                            setFechaFin(parsedDate);
+                        } else {
+                            setFechaFin(null);
+                        }
+                    }}
+                    style={styles.inputWeb}
+                />
+            ) : (
+                <TouchableOpacity style={styles.fechaInput} onPress={() => setMostrarPickerFin(true)}>
+                    <Text style={styles.fechaTexto}>
+                        {fechaFin ? moment(fechaFin).format('D/M/YYYY, HH:mm') : 'Seleccionar fecha de fin'}
+                    </Text>
+                </TouchableOpacity>
+            )}
+
+            {/* Botones */}
+            <TouchableOpacity style={styles.botonGuardar} onPress={guardarEdicion}>
+                <Text style={styles.textoBoton}>GUARDAR CAMBIOS</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.botonCancelar} onPress={() => setModalEditarVisible(false)}>
+                <Text style={styles.textoBoton}>CANCELAR</Text>
+            </TouchableOpacity>
+        </View>
+    </View>
 </Modal>
 {!esWeb && (
   <>
