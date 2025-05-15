@@ -21,7 +21,7 @@ export default function Inicio() {
               <Ionicons name="home-outline" size={24} color="#ffffff" />
               <Text style={styles.navText}>Inicio</Text>
             </TouchableOpacity>
-            <Text style={styles.navTitle}>Bienvenido a NeurogGestion</Text>
+            <Text style={styles.navTitle}>Bienvenido a NeuroGestion</Text>
             <TouchableOpacity
       style={styles.navItem}
       onPress={() => navigation.navigate('Perfil')}
@@ -30,8 +30,6 @@ export default function Inicio() {
       <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
     </TouchableOpacity>
           </View>
-
-      {/* Fondo dinámico */}
       {esWeb ? (
         <ImageBackground
           source={require('../assets/imagenes/imagenFondo.jpg')}
@@ -51,8 +49,6 @@ export default function Inicio() {
           pointerEvents="none"
         />
       )}
-
-      {/* Contenido */}
       <View style={styles.contenido}>
         <View style={styles.botonera}>
         <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]} onPress={() => navigation.navigate('Pacientes')}>
@@ -70,13 +66,12 @@ export default function Inicio() {
             <Text style={styles.botonTexto}>Documentos</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}onPress={() => navigation.navigate('Sesiones')}>
             <Ionicons name="folder-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Sesiones</Text>
           </TouchableOpacity>
         </View>
       </View>
-
     </View>
   );
 }
