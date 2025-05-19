@@ -1,7 +1,8 @@
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc, query, where, doc } from 'firebase/firestore';
-import { app } from './firebaseConfig';
+import { app, storage } from './firebaseConfig';
 
 export const db = getFirestore(app);
+export { storage };
 
 export const agregarUsuario = async (usuario: any) => {
   try {

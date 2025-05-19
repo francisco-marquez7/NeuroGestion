@@ -61,7 +61,7 @@ export default function Inicio() {
             <Text style={styles.botonTexto}>Citas</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}>
+          <TouchableOpacity style={[styles.boton, { width: botonSize, height: botonSize }]}onPress={() => navigation.navigate('Documentos')}>
             <Ionicons name="document-text-outline" size={50} color="#2b7a78" />
             <Text style={styles.botonTexto}>Documentos</Text>
           </TouchableOpacity>
