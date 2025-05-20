@@ -38,7 +38,12 @@ const Documentos = () => {
   const [categoriaSubida, setCategoriaSubida] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<any>(null);
-  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [hoveredId] = useState<string | null>(null);
+  const [hoveredIcon, setHoveredIcon] = useState(null);
+const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
+const [nombreCategoria, setNombreCategoria] = useState('');
+const [iconoCategoria, setIconoCategoria] = useState('');
+const [showTooltip, setShowTooltip] = useState<boolean>(false);
 
 
 
@@ -87,7 +92,8 @@ const Documentos = () => {
     cat.nombre.toLowerCase().includes(busquedaCategorias.toLowerCase())
   );
 
-  const confirmarEliminar = (id: string) => {
+const confirmarEliminar = (id: string) => {
+  console.log('Eliminar documento:', id);
   Alert.alert(
     'Eliminar documento',
     '¿Seguro que deseas eliminar este documento?',
@@ -102,13 +108,43 @@ const Documentos = () => {
   );
 };
 
+
 const eliminarDocumento = async (id: string) => {
+  console.log('Intentando eliminar documento con id:', id);
   try {
-    await deleteDoc(doc(db, 'documentos', id));
+    const docRef = doc(db, 'documentos', id);
+    console.log('Referencia documento:', docRef.path);
+
+    await deleteDoc(docRef);
+    
+    console.log('Documento eliminado correctamente');
     Alert.alert('Eliminado', 'Documento eliminado correctamente');
   } catch (err) {
-    Alert.alert('Error', 'No se pudo eliminar');
     console.error('Error eliminando documento:', err);
+    Alert.alert('Error', 'No se pudo eliminar el documento. Revisa consola para más detalles.');
+  }
+};
+
+
+const guardarCategoria = async () => {
+  if (!nombreCategoria || !iconoCategoria) {
+    Alert.alert('Completa los campos');
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, 'categoriasDocumentos'), {
+      nombre: nombreCategoria,
+      icono: iconoCategoria,
+      activo: true,
+    });
+
+    Alert.alert('Categoría añadida');
+    setModalCategoriaVisible(false);
+    setNombreCategoria('');
+    setIconoCategoria('');
+  } catch (err) {
+    Alert.alert('Error', 'No se pudo guardar');
   }
 };
 
@@ -121,8 +157,8 @@ const eliminarDocumento = async (id: string) => {
         </TouchableOpacity>
         <Text style={styles.navTitle}>Documentos</Text>
         <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Perfil')}>
-          <Ionicons name="person-circle-outline" size={28} color="#fff" />
           <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
+          <Ionicons name="person-circle-outline" size={28} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -134,8 +170,27 @@ const eliminarDocumento = async (id: string) => {
 
       <View style={styles.content}>
         <View style={styles.filtrosContainer}>
-          <View style={styles.card}>
-            <Text style={styles.titulo}>Categorías</Text>
+           <View style={[styles.card, styles.cardCategorias]}>
+            <View style={styles.headerCategorias}>
+  <Text style={styles.titulo}>Categorías</Text>
+  <TouchableOpacity
+    style={styles.botonAgregarCategoria}
+    onPress={() => setModalCategoriaVisible(true)}
+    {...(Platform.OS === 'web'
+      ? {
+          onMouseEnter: () => setShowTooltip(true),
+          onMouseLeave: () => setShowTooltip(false),
+        }
+      : {})}
+  >
+    <Ionicons name="add-circle-outline" size={22} color="#2b7a78" />
+  </TouchableOpacity>
+</View>
+{Platform.OS === 'web' && showTooltip && (
+  <View style={styles.tooltip}>
+    <Text style={styles.tooltipText}>Añadir categoría</Text>
+  </View>
+)}
             <TextInput
               placeholder="Buscar categorías..."
               value={busquedaCategorias}
@@ -169,7 +224,7 @@ const eliminarDocumento = async (id: string) => {
             </ScrollView>
           </View>
 
-                    <View style={[styles.card, { width: 180 }]}>
+            <View style={[styles.card, styles.cardFechas]}>
             <Text style={styles.titulo}>Fechas</Text>
 
             {Platform.OS === 'web' ? (
@@ -244,15 +299,15 @@ const eliminarDocumento = async (id: string) => {
           <TouchableOpacity
   style={styles.btnLimpiar}
   onPress={onLimpiarFiltros}
+  disabled={categoriasSeleccionadas.length === categorias.length && !fechaInicio && !fechaFin}
 >
-  <Text style={[styles.btnText, { color: '#fff' }]}>Eliminar filtros</Text>
+  <Text style={styles.btnText}>Eliminar filtros</Text>
 </TouchableOpacity>
         </View>
         <FlatList
   data={documentos}
   keyExtractor={item => item.id}
   numColumns={2}
-  columnWrapperStyle={{ justifyContent: 'space-between' }}
   contentContainerStyle={{
   paddingBottom: 20,
   paddingTop: 10,
@@ -278,22 +333,25 @@ const eliminarDocumento = async (id: string) => {
         ? new Date(item.fechaSubida.seconds * 1000).toLocaleDateString()
         : ''}
     </Text>
-
     <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 10 }}>
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={() =>
-          item.urlArchivo
-            ? Linking.openURL(item.urlArchivo)
-            : Alert.alert('Documento no disponible')
-        }
-      >
-        <Ionicons name="eye-outline" size={22} color="#3aafa9" />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => confirmarEliminar(item.id)}>
-        <Ionicons name="trash-outline" size={22} color="#e74c3c" />
-      </TouchableOpacity>
-    </View>
+  <Pressable
+    style={({ pressed }) => [styles.iconButton, pressed && { opacity: 1 }]}
+    android_ripple={{ color: 'transparent' }}
+    onPress={() =>
+      item.urlArchivo
+        ? Linking.openURL(item.urlArchivo)
+        : Alert.alert('Documento no disponible')
+    }
+  >
+    <Ionicons name="eye-outline" size={22} color="#3aafa9" />
+  </Pressable>
+
+  <TouchableOpacity onPress={() => confirmarEliminar(item.id)}>
+    <Ionicons name="trash-outline" size={22} color="#e74c3c" />
+  </TouchableOpacity>
+
+  
+</View>
   </Pressable>
 )}
   ListEmptyComponent={<Text style={styles.noDocsText}>No hay documentos</Text>}
@@ -324,21 +382,22 @@ const eliminarDocumento = async (id: string) => {
       <Text style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 20, textAlign: 'center' }}>
         Añadir archivo
       </Text>
+  <View style={styles.headerCategorias}>
+  <Text style={styles.titulo}>Categorías</Text>
+  <TouchableOpacity onPress={() => setModalCategoriaVisible(true)}>
+    <Ionicons name="add-circle-outline" size={22} color="#2b7a78" />
+  </TouchableOpacity>
+</View>
 
-      <TextInput
-        placeholder="Buscar categoría..."
-        value={busquedaCategorias}
-        onChangeText={setBusquedaCategorias}
-        style={{
-          borderWidth: 1,
-          borderColor: '#ccc',
-          borderRadius: 6,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
-          fontSize: 16,
-          marginBottom: 10,
-        }}
-      />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#2b7a78', borderRadius: 8, paddingHorizontal: 8 }}>
+  <Ionicons name="search-outline" size={20} color="#2b7a78" />
+  <TextInput
+    placeholder="Buscar categorías..."
+    value={busquedaCategorias}
+    onChangeText={setBusquedaCategorias}
+    style={{ flex: 1, paddingVertical: 8, marginLeft: 6, fontSize: 16 }}
+  />
+</View>
 
       {busquedaCategorias.trim() !== '' && (
         <ScrollView style={{ maxHeight: 150, marginBottom: 10 }}>
@@ -445,6 +504,57 @@ const eliminarDocumento = async (id: string) => {
     </View>
   </View>
 </Modal>
+<Modal visible={modalCategoriaVisible} transparent animationType="fade">
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      
+      <TouchableOpacity
+        onPress={() => setModalCategoriaVisible(false)}
+        style={{ position: 'absolute', top: 10, right: 10 }}
+      >
+        <Ionicons name="close" size={24} color="#666" />
+      </TouchableOpacity>
+
+      <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' }}>
+        Añadir categoría
+      </Text>
+
+      <TextInput
+        placeholder="Nombre de la categoría"
+        value={nombreCategoria}
+        onChangeText={setNombreCategoria}
+        style={styles.input}
+      />
+
+      <Text style={{ fontSize: 14, marginBottom: 6 }}>Selecciona un icono:</Text>
+      <ScrollView horizontal contentContainerStyle={{ paddingBottom: 10 }}>
+        {[
+          'school-outline', 'document-text-outline', 'fitness-outline',
+          'medical-outline', 'book-outline', 'bulb-outline'
+        ].map(icon => (
+          <TouchableOpacity
+            key={icon}
+            style={{
+              padding: 8,
+              marginRight: 8,
+              backgroundColor: iconoCategoria === icon ? '#2b7a78' : '#eee',
+              borderRadius: 6,
+            }}
+            onPress={() => setIconoCategoria(icon)}
+          >
+            <Ionicons name={icon as any} size={24} color={iconoCategoria === icon ? '#fff' : '#333'} />
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <TouchableOpacity style={styles.botonSubir} onPress={guardarCategoria}>
+        <Ionicons name="save-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.botonSubirTexto}>Guardar</Text>
+      </TouchableOpacity>
+
+    </View>
+  </View>
+</Modal>
 
       </View>
     </View>
@@ -495,16 +605,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
   },
-  inputBusqueda: {
+   inputBusqueda: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    marginBottom: 8,
+    borderColor: '#2b7a78',  // color corporativo
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+    fontSize: 16,
   },
-  scrollCategorias: {
-    maxHeight: 170,
+ scrollCategorias: {
+    maxHeight: 150,
   },
   checkboxRow: {
     flexDirection: 'row',
@@ -523,10 +634,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     marginBottom: 20,
-  },
-  btnText: {
-    color: 'white',
-    fontWeight: 'bold',
   },
   docItem: {
     padding: 15,
@@ -549,45 +656,46 @@ const styles = StyleSheet.create({
   elevation: 6,
   transform: [{ scale: 1.02 }],
 },
-cardDocumento: {
-  backgroundColor: '#fff',
-  padding: 14,
-  borderRadius: 10,
-  width: '20%',
-  marginBottom: 16,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.15,
-  shadowRadius: 4,
-  elevation: 3,
-  alignSelf: 'center',
-  alignItems: 'center', // centra el contenido
-},
-docTitulo: {
-  fontSize: 16,
-  color: '#2b7a78',
-  fontWeight: 'bold',
-  textAlign: 'center',
-},
-docDescripcion: {
-  fontSize: 14,
-  color: '#555',
-  marginTop: 4,
-  textAlign: 'left',
-},
-docCategoria: {
-  fontSize: 12,
-  fontStyle: 'italic',
-  color: '#777',
-  marginTop: 4,
-  textAlign: 'left',
-},
-docFecha: {
-  fontSize: 13,
-  color: '#aaa',
-  marginTop: 2,
-  textAlign: 'left',
-},
+  cardDocumento: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    width: '45%',       
+    marginBottom: 16,
+    marginHorizontal: 8, 
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+    alignSelf: 'center',
+    alignItems: 'flex-start', 
+  },
+ docTitulo: {
+    fontSize: 16,
+    color: '#2b7a78',
+    fontWeight: 'bold',
+    textAlign: 'left',
+  },
+  docDescripcion: {
+    fontSize: 14,
+    color: '#444',         
+    marginTop: 4,
+    textAlign: 'left',
+  },
+  docCategoria: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: '#555',
+    marginTop: 6,
+    textAlign: 'left',
+  },
+  docFecha: {
+    fontSize: 12,
+    color: '#777',
+    marginTop: 2,
+    textAlign: 'left',
+  },
 
 btnVer: {
   backgroundColor: '#3aafa9',
@@ -633,18 +741,26 @@ modalContent: {
   width: '80%',
   maxHeight: '80%',
 },
-iconButton: {
-  padding: 6,
-  borderRadius: 50,
-  backgroundColor: 'rgba(0,0,0,0.05)',
-},
-btnLimpiar: {
-  backgroundColor: '#a0cfc6', 
-  paddingHorizontal: 20,
-  paddingVertical: 10,
-  borderRadius: 6,
-  marginHorizontal: 10,
-},
+  iconButton: {
+    padding: 8,
+    borderRadius: 50,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    marginHorizontal: 10,
+  },
+  iconButtonHover: {
+    backgroundColor: '#3aafa9',
+  },
+  btnLimpiar: {
+    backgroundColor: '#2b7a78',
+    paddingHorizontal: 30,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginHorizontal: 10,
+  },
+  btnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
 btnSubirModal: {
   backgroundColor: '#2b7a78',
   paddingVertical: 12,
@@ -669,29 +785,99 @@ cardHover: {
   shadowRadius: 6,
   elevation: 6,
 },
-botonSubir: {
+ botonSubir: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#27ae60',  // verde vibrante
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    alignSelf: 'center',
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  botonSubirTexto: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+input: {
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 6,
+  padding: 10,
+  marginBottom: 10,
+},
+headerCategorias: {
   flexDirection: 'row',
   alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#2b7a78',
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-  borderRadius: 10,
-  alignSelf: 'center',
-  marginBottom: 20,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.2,
-  shadowRadius: 4,
+  justifyContent: 'space-between',
+  marginBottom: 6,
+},
+
+botonAgregarCategoria: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'transparent',
+  paddingVertical: 6,
+  paddingHorizontal: 6,
+  borderRadius: 6,
   elevation: 3,
 },
 
-botonSubirTexto: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 16,
-},
+  tooltip: {
+    position: 'absolute',
+    right: 10,
+    top: 25,
+    backgroundColor: '#2b7a78',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    zIndex: 999,
+  },
 
+  tooltipText: {
+    color: 'white',
+    fontSize: 12,
+  },
+
+  scrollCategoriasHorizontal: {
+    maxHeight: 50,
+  },
+
+  checkboxRowHorizontal: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#eee',
+  },
+
+  checkboxRowSelected: {
+    backgroundColor: '#d0f0f6',
+  },
+
+  checkboxText: {
+    marginLeft: 8,
+  },
+  cardCategorias: {
+    flex: 2,
+    maxHeight: 250,
+    marginRight: 15,
+    padding: 15,
+  },
+  cardFechas: {
+    flex: 1,
+    maxHeight: 250,
+    padding: 15,
+  },
 });
 
 export default Documentos;
