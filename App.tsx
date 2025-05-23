@@ -8,12 +8,11 @@ import Registro from './pantallas/Registro';
 import RecuperarContraseña from './pantallas/RecuperarContraseña';
 import Inicio from './pantallas/Inicio';
 import Pacientes from './pantallas/Pacientes';
-import AltaPaciente from './pantallas/AltaPaciente';
-import EditarPaciente from './pantallas/EditarPaciente';
 import Perfil from './pantallas/Perfil';
 import CalendarioCitas from './pantallas/CalendarioCitas';
 import Sesiones from './pantallas/Sesiones';
 import Documentos from './pantallas/Documentos';
+import Gestion from './pantallas/Gestion';
 
 const Stack = createStackNavigator();
 
@@ -27,12 +26,11 @@ export default function App() {
           <Stack.Screen name="RecuperarContraseña" component={RecuperarContraseña} />
           <Stack.Screen name="Inicio" component={Inicio} />
           <Stack.Screen name="Pacientes" component={Pacientes} />
-          <Stack.Screen name="AltaPaciente" component={AltaPaciente} />
-          <Stack.Screen name="EditarPaciente" component={EditarPaciente} />
           <Stack.Screen name="Perfil" component={Perfil} />
           <Stack.Screen name="CalendarioCitas" component={CalendarioCitas}/>
           <Stack.Screen name="Sesiones" component={Sesiones}/>
           <Stack.Screen name="Documentos" component={Documentos}/>
+          <Stack.Screen name="Gestion" component={Gestion}/>
         </Stack.Navigator>
       </NavigationContainer>
     </UsuarioProvider>

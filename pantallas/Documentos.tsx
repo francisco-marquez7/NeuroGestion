@@ -93,19 +93,25 @@ const [showTooltip, setShowTooltip] = useState<boolean>(false);
   );
 
 const confirmarEliminar = (id: string) => {
-  console.log('Eliminar documento:', id);
-  Alert.alert(
-    'Eliminar documento',
-    '¿Seguro que deseas eliminar este documento?',
-    [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () => eliminarDocumento(id),
-      },
-    ]
-  );
+  if (Platform.OS === 'web') {
+    if (window.confirm('¿Seguro que deseas eliminar este documento?')) {
+      eliminarDocumento(id);
+    }
+  } else {
+    Alert.alert(
+      'Eliminar documento',
+      '¿Seguro que deseas eliminar este documento?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () => eliminarDocumento(id),
+        },
+      ],
+      { cancelable: true }
+    );
+  }
 };
 
 

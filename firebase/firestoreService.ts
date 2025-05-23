@@ -3,6 +3,8 @@ import { app, storage } from './firebaseConfig';
 
 export const db = getFirestore(app);
 export { storage };
+export { agregarUsuario as addUsuario };
+export { actualizarUsuario as updateUsuario };
 
 export const agregarUsuario = async (usuario: any) => {
   try {
@@ -88,15 +90,10 @@ export const obtenerNombreEmpresaPorId = async (empresaId: string): Promise<stri
 };
 
 
-export const actualizarUsuario = async (uid: string, nombre: string, apellidos: string) => {
-  try {
-    const ref = doc(db, 'usuarios', uid);
-    await updateDoc(ref, { nombre, apellidos });
-  } catch (error) {
-    console.error('Error al actualizar nombre del usuario:', error);
-    throw error;
-  }
+export const actualizarUsuario = async (uid: string, usuarioData: any) => {
+  await updateDoc(doc(db, 'usuarios', uid), usuarioData);
 };
+
 
 export const obtenerCitasPorUsuario = async (usuario: any) => {
   try {
@@ -120,4 +117,33 @@ export const obtenerCitasPorUsuario = async (usuario: any) => {
     console.error('Error obteniendo citas:', error);
     return [];
   }
+};
+// USUARIOS
+
+export const getUsuarios = async () => {
+  const snapshot = await getDocs(collection(db, 'usuarios'));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
+
+export const deleteUsuario = async (id: string) => {
+  await deleteDoc(doc(db, 'usuarios', id));
+};
+
+// EMPRESAS
+
+export const getEmpresas = async () => {
+  const snapshot = await getDocs(collection(db, 'empresas'));
+  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+};
+
+export const addEmpresa = async (empresaData: any) => {
+  await addDoc(collection(db, 'empresas'), empresaData);
+};
+
+export const updateEmpresa = async (id: string, empresaData: any) => {
+  await updateDoc(doc(db, 'empresas', id), empresaData);
+};
+
+export const deleteEmpresa = async (id: string) => {
+  await deleteDoc(doc(db, 'empresas', id));
 };
