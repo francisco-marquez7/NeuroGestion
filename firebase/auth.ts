@@ -8,25 +8,40 @@ import {
   sendPasswordResetEmail,
 } from 'firebase/auth';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { Usuario } from '../context/UsuarioContext';
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-export const iniciarSesion = async (email: string, password: string) => {
+export const iniciarSesion = async (email: string, password: string): Promise<Usuario> => {
+  // Autenticar con Firebase Auth
   const credenciales = await signInWithEmailAndPassword(auth, email, password);
+
+  // Normalizar email para búsqueda en Firestore
+  const emailLimpio = email.trim().toLowerCase();
+
+  // Obtener colección usuarios
   const usuariosRef = collection(db, 'usuarios');
   const snapshot = await getDocs(usuariosRef);
-  const docUsuario = snapshot.docs.find(doc => doc.data().email === email);
+
+  // Buscar documento que coincida con email normalizado
+  const docUsuario = snapshot.docs.find(
+    doc => doc.data().email.trim().toLowerCase() === emailLimpio
+  );
 
   if (!docUsuario) {
     throw new Error('Usuario no encontrado en Firestore');
   }
 
-  return {
+  // Construir objeto Usuario completo
+  const usuario: Usuario = {
     id: docUsuario.id,
-    ...docUsuario.data(),
+    ...(docUsuario.data() as Omit<Usuario, 'id'>),
   };
+
+  return usuario;
 };
+
 
 export const cerrarSesion = async () => {
   return await signOut(auth);
@@ -49,3 +64,4 @@ export const recuperarContraseña = async (email: string) => {
     throw new Error(error.message);
   }
 };
+

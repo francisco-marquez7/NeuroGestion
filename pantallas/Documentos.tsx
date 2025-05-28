@@ -39,7 +39,6 @@ const Documentos = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [archivoSeleccionado, setArchivoSeleccionado] = useState<any>(null);
   const [hoveredId] = useState<string | null>(null);
-  const [hoveredIcon, setHoveredIcon] = useState(null);
 const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
 const [nombreCategoria, setNombreCategoria] = useState('');
 const [iconoCategoria, setIconoCategoria] = useState('');

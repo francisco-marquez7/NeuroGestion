@@ -1,54 +1,37 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, Text, StyleSheet, Alert, TouchableOpacity, Dimensions, ImageBackground, Platform } from 'react-native';
-import { iniciarSesion } from '../firebase/auth';
-import { useUsuario } from '../context/UsuarioContext';
-import { buscarUsuarioPorEmail } from '../firebase/firestoreService';
+import { View, TextInput, Button, Text, StyleSheet, TouchableOpacity, Dimensions, ImageBackground, Platform } from 'react-native';
 import { Video, ResizeMode } from 'expo-av';
+import { useUsuario } from '../context/UsuarioContext'; 
 
 const { width, height } = Dimensions.get('window');
 
-export default function Login({ navigation }: any) {
+export default function Login({ navigation, onLogin}: any) {
+  const { login } = useUsuario();
   const [email, setEmail] = useState('');
-  const [clave, setClave] = useState('');
-  const { setUsuario } = useUsuario();
+  const [password, setPassword] = useState('');
   const esWeb = Platform.OS === 'web';
 
-  const manejarLogin = async () => {
-    try {
-      await iniciarSesion(email, clave);
-      const datosUsuario = await buscarUsuarioPorEmail(email);
-      if (datosUsuario) {
-        setUsuario(datosUsuario);
-      }
+const manejarLogin = async () => {
+  if (!email.trim() || !password) {
+    alert('Por favor, completa email y contraseña');
+    return;
+  }
 
-      Alert.alert('Inicio de sesión correcto', 'Sesión iniciada correctamente.');
-      navigation.replace('Inicio');
-    } catch (error: any) {
-      Alert.alert('Error al iniciar sesión', 'El email o la contraseña son incorrectos.');
-    }
-  };
+  try {
+    await login(email.trim(), password);
+    navigation.replace('Inicio');
+  } catch (error: any) {
+    alert('Error en login: ' + error.message);
+  }
+};
 
   return (
     <View style={estilos.contenedor}>
-      {esWeb ? (
         <ImageBackground
           source={require('../assets/imagenes/imagenFondoLogin.png')}
           style={estilos.fondoWeb}
           resizeMode="cover"
         />
-      ) : (
-        <Video
-          source={require('../assets/videos/fondoLogin4.mp4')}
-          rate={1.0}
-          volume={1.0}
-          isMuted
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-      )}
 
       <View style={estilos.formulario}>
         <Text style={estilos.titulo}>NeuroGestión</Text>
@@ -63,8 +46,8 @@ export default function Login({ navigation }: any) {
 
         <TextInput
           placeholder="Contraseña"
-          value={clave}
-          onChangeText={setClave}
+          value={password}
+          onChangeText={setPassword}
           secureTextEntry
           style={estilos.input}
           placeholderTextColor="#ccc"

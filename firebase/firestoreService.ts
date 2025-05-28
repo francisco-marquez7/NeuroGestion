@@ -1,8 +1,7 @@
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc, query, where, doc } from 'firebase/firestore';
-import { app, storage } from './firebaseConfig';
+import { app} from './firebaseConfig';
 
 export const db = getFirestore(app);
-export { storage };
 export { agregarUsuario as addUsuario };
 export { actualizarUsuario as updateUsuario };
 
@@ -122,11 +121,14 @@ export const obtenerCitasPorUsuario = async (usuario: any) => {
 
 export const getUsuarios = async () => {
   const snapshot = await getDocs(collection(db, 'usuarios'));
-  return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...(doc.data() as any),
+  }));
 };
-
 export const deleteUsuario = async (id: string) => {
-  await deleteDoc(doc(db, 'usuarios', id));
+  const usuarioRef = doc(db, "usuarios", id);
+  await deleteDoc(usuarioRef);
 };
 
 // EMPRESAS
