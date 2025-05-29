@@ -11,13 +11,14 @@ import {
   KeyboardAvoidingView,
   ImageBackground,
   Dimensions,
+  Modal, Pressable
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useUsuario } from '../context/UsuarioContext';
 import { actualizarUsuario, obtenerNombreEmpresaPorId } from '../firebase/firestoreService';
 import { cerrarSesion } from '../firebase/auth';
-import { Alert } from 'react-native';
+
 
 
 
@@ -30,7 +31,25 @@ export default function Perfil() {
   const [nombre, setNombre] = useState(usuario?.nombre || '');
   const [apellidos, setApellidos] = useState(usuario?.apellidos || '');
   const [empresaNombre, setEmpresaNombre] = useState('');
+const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false);
 
+const manejarCerrarSesion = () => {
+  setModalCerrarSesionVisible(true);
+};
+
+const confirmarCerrarSesion = async () => {
+  try {
+    await cerrarSesion();
+    setUsuario(null);
+    setModalCerrarSesionVisible(false);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  } catch (error) {
+    alert('Error cerrando sesión');
+  }
+};
   useEffect(() => {
     const cargarNombreEmpresa = async () => {
       if (usuario?.empresaId) {
@@ -42,39 +61,15 @@ export default function Perfil() {
   }, [usuario]);
 
 
-  const manejarCerrarSesion = () => {
-    Alert.alert(
-      '¿Cerrar sesión?',
-      'Tu sesión se cerrará y volverás al inicio. ¿Deseas continuar?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Sí, cerrar sesión',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await cerrarSesion();     
-              setUsuario(null);          
-              navigation.replace('Login');
-            } catch (error) {
-              alert('Error cerrando sesión');
-            }
-          }
-        }
-      ],
-      { cancelable: true }
-    );
-  };  
-
-  const guardarCambios = async () => {
-    try {
-      await actualizarUsuario(usuario!.id, nombre, apellidos);
-      setUsuario({ ...usuario!, nombre, apellidos });
-      setEditando(false);
-    } catch (error) {
-      alert('Error al guardar los cambios');
-    }
-  };
+const guardarCambios = async () => {
+  try {
+    await actualizarUsuario(usuario!.id, { nombre, apellidos });
+    setUsuario({ ...usuario!, nombre, apellidos });
+    setEditando(false);
+  } catch (error) {
+    alert('Error al guardar los cambios');
+  }
+}
 
   if (!usuario) {
     return (
@@ -105,6 +100,16 @@ export default function Perfil() {
 <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
   <ScrollView contentContainerStyle={styles.scrollContainer}>
     <View style={styles.card}>
+      {editando && (
+  <TouchableOpacity
+    style={styles.closeButton}
+    onPress={() => setEditando(false)}
+    accessible={true}
+    accessibilityLabel="Cerrar edición"
+  >
+    <Ionicons name="close" size={28} color="#e74c3c" />
+  </TouchableOpacity>
+)}
       <View style={styles.nombreFila}>
         <View>
           <Text style={styles.label}>Nombre:</Text>
@@ -114,12 +119,12 @@ export default function Perfil() {
             <Text style={styles.info}>{usuario.nombre}</Text>
           )}
         </View>
-        <TouchableOpacity onPress={manejarCerrarSesion} style={styles.logoutIcon}>
-          <Ionicons name="log-out-outline" size={28} color="#2b7a78" />
-        </TouchableOpacity>
+        {!editando && (
+  <TouchableOpacity onPress={manejarCerrarSesion} style={styles.logoutIcon} accessibilityLabel="Cerrar sesión">
+    <Ionicons name="log-out-outline" size={28} color="#2b7a78" />
+  </TouchableOpacity>
+)}
       </View>
-
-      {/* El resto del formulario */}
       <Text style={styles.label}>Apellidos:</Text>
       {editando ? (
         <TextInput value={apellidos} onChangeText={setApellidos} style={styles.input} />
@@ -140,7 +145,6 @@ export default function Perfil() {
         {editando ? (
           <>
             <Button title="Guardar" onPress={guardarCambios} color="#2b7a78" />
-            <Button title="Cancelar" onPress={() => setEditando(false)} color="#e74c3c" />
           </>
         ) : (
           <Button title="Editar" onPress={() => setEditando(true)} color="#2b7a78" />
@@ -150,6 +154,33 @@ export default function Perfil() {
     </View>
   </ScrollView>
 </KeyboardAvoidingView>
+<Modal
+  transparent
+  visible={modalCerrarSesionVisible}
+  animationType="fade"
+  onRequestClose={() => setModalCerrarSesionVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalText}>¿Estas seguro que quieres cerrar la sesion?</Text>
+      <View style={styles.modalButtons}>
+        <Pressable
+          style={[styles.modalButton, styles.cancelButton]}
+          onPress={() => setModalCerrarSesionVisible(false)}
+        >
+          <Text style={styles.buttonText}>No</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.modalButton, styles.confirmButton]}
+          onPress={confirmarCerrarSesion}
+        >
+          <Text style={styles.buttonText}>Sí, cerrar sesión</Text>
+        </Pressable>
+      </View>
+    </View>
+  </View>
+</Modal>
+
     </ImageBackground>
   );
 }
@@ -241,4 +272,54 @@ const styles = StyleSheet.create({
   logoutIcon: {
     marginLeft: 10,
   },  
+  closeButton: {
+  position: 'absolute',
+  top: 12,
+  right: 12,
+  zIndex: 10,
+},
+modalOverlay: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+modalContent: {
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  padding: 20,
+  width: '80%',
+  maxWidth: 320,
+  alignItems: 'center',
+},
+modalText: {
+  fontSize: 16,
+  marginBottom: 20,
+  textAlign: 'center',
+  color: '#333',
+},
+modalButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  width: '100%',
+},
+modalButton: {
+  flex: 1,
+  paddingVertical: 10,
+  marginHorizontal: 5,
+  borderRadius: 6,
+  alignItems: 'center',
+},
+cancelButton: {
+  backgroundColor: '#e74c3c',
+},
+confirmButton: {
+  backgroundColor: '#2b7a78',
+},
+buttonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
+
 });

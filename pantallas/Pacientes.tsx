@@ -384,25 +384,11 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
               </TouchableOpacity>
             </View>
 
-      {esWeb ? (
         <ImageBackground
           source={require('../assets/imagenes/imagenFondo.jpg')}
           style={styles.fondoImagen}
           resizeMode="cover"
         />
-      ) : (
-        <Video
-          source={require('../assets/videos/fondoLogin.mp4')}
-          rate={1.0}
-          volume={1.0}
-          isMuted
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-      )}
 
       <View style={styles.contenido}>
           <View style={styles.barraFiltros}>
