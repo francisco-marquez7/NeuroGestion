@@ -26,25 +26,11 @@ export default function RecuperarContraseña({ navigation }: any) {
 
   return (
     <View style={styles.contenedor}>
-      {esWeb ? (
-        <ImageBackground
-          source={require('../assets/imagenes/imagenFondoLogin.png')}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-      ) : (
-        <Video
-          source={require('../assets/videos/fondoLogin4.mp4')}
-          rate={1.0}
-          volume={1.0}
-          isMuted
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-      )}
+      <ImageBackground
+                source={require('../assets/imagenes/imagenFondoLogin.png')}
+                style={styles.fondoWeb}
+                resizeMode="cover"
+              />
       <View style={styles.formulario}>
         <Text style={styles.titulo}>Recuperar Contraseña</Text>
 
@@ -56,13 +42,14 @@ export default function RecuperarContraseña({ navigation }: any) {
           placeholderTextColor="#ccc"
         />
 
-        <View style={{ marginVertical: 10 }}>
-          <Button title="Enviar correo" onPress={manejarRecuperar} color="#2b7a78" />
-        </View>
-      <View style={styles.volverContainer}>
+              <View style={styles.volverContainer}>
         <Text style={styles.volverTexto} onPress={() => navigation.navigate('Login')}>
           Iniciar Sesion
         </Text>
+        </View>
+
+        <View style={{ marginVertical: 10 }}>
+          <Button title="Enviar correo" onPress={manejarRecuperar} color="#2b7a78" />
         </View>
       </View>
     </View>
@@ -113,5 +100,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textDecorationLine: 'underline',
   },
-  
+    fondoWeb: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: -1,
+  },
 });

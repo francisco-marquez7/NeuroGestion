@@ -53,21 +53,16 @@ const manejarLogin = async () => {
           placeholderTextColor="#ccc"
         />
 
-        <View style={{ marginVertical: 10 }}>
-          <Button title="Iniciar sesión" onPress={manejarLogin} color="#2b7a78" />
-        </View>
-
         <View style={estilos.links}>
-          <TouchableOpacity onPress={() => navigation.navigate('Registro')}>
-            <Text style={estilos.linkTexto}>Registrarse</Text>
-          </TouchableOpacity>
-
-          <Text style={estilos.separador}>|</Text>
-
           <TouchableOpacity onPress={() => navigation.navigate('RecuperarContraseña')}>
             <Text style={estilos.linkTexto}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={{ marginVertical: 10 }}>
+          <Button title="Iniciar sesión" onPress={manejarLogin} color="#2b7a78" />
+        </View>
+
       </View>
     </View>
   );

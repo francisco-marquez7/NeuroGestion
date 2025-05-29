@@ -4,7 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { UsuarioProvider } from './context/UsuarioContext';
 
 import Login from './pantallas/Login';
-import Registro from './pantallas/Registro';
 import RecuperarContraseña from './pantallas/RecuperarContraseña';
 import Inicio from './pantallas/Inicio';
 import Pacientes from './pantallas/Pacientes';
@@ -27,7 +26,6 @@ export default function App() {
           <Stack.Screen name="Login">
             {(props) => <Login {...props} onLogin={login} />}
           </Stack.Screen>
-          <Stack.Screen name="Registro" component={Registro} />
           <Stack.Screen name="RecuperarContraseña" component={RecuperarContraseña} />
           <Stack.Screen name="Inicio" component={Inicio} />
           <Stack.Screen name="Pacientes" component={Pacientes} />
