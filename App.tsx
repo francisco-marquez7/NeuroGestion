@@ -13,16 +13,34 @@ import Sesiones from './pantallas/Sesiones';
 import Documentos from './pantallas/Documentos';
 import Gestion from './pantallas/Gestion';
 
-const Stack = createStackNavigator();
+// Definición de los tipos de pantallas
+export type RootStackParamList = {
+  Login: undefined;
+  RecuperarContraseña: undefined;
+  Inicio: undefined;
+  Pacientes: undefined;
+  Perfil: undefined;
+  CalendarioCitas: undefined;
+  Sesiones: undefined;
+  Documentos: undefined;
+  Gestion: undefined;
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function App() {
   const login = async (email: string, password: string) => {
+    // lógica futura de login si se requiere
   };
 
   return (
-   <UsuarioProvider>
+    <UsuarioProvider>
       <NavigationContainer>
-        <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
+        <Stack.Navigator
+          id={undefined}
+          initialRouteName="Login"
+          screenOptions={{ headerShown: false }}
+        >
           <Stack.Screen name="Login">
             {(props) => <Login {...props} onLogin={login} />}
           </Stack.Screen>

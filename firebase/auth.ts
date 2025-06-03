@@ -7,7 +7,8 @@ import {
   fetchSignInMethodsForEmail,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, addDoc 
+ } from 'firebase/firestore';
 import { Usuario } from '../context/UsuarioContext';
 
 const auth = getAuth(app);
@@ -30,8 +31,19 @@ export const iniciarSesion = async (email: string, password: string): Promise<Us
   );
 
   if (!docUsuario) {
-    throw new Error('Usuario no encontrado en Firestore');
-  }
+  // Crear usuario básico en Firestore si no existe
+  const nuevoUsuario: Omit<Usuario, 'id'> = {
+    email: emailLimpio,
+    nombre: 'Nuevo usuario',
+    apellidos: '',
+    empresaId: '',
+    rol: 'profesional', 
+  };
+
+  const docRef = await addDoc(collection(db, 'usuarios'), nuevoUsuario);
+  return { id: docRef.id, ...nuevoUsuario };
+}
+
 
   // Construir objeto Usuario completo
   const usuario: Usuario = {

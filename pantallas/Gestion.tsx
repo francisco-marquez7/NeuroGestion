@@ -430,27 +430,24 @@ const usuariosFiltrados = usuarios.filter((u) => {
                 <Ionicons name="arrow-back-outline" size={24} color="#fff" />
                 <Text style={styles.navText}>Volver</Text>
               </TouchableOpacity>
-              <Text style={styles.navTitle}>Documentos</Text>
+              <Text style={styles.navTitle}>Gestión</Text>
               <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Perfil')}>
                 <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
                 <Ionicons name="person-circle-outline" size={28} color="#fff" />
               </TouchableOpacity>
        </View>
-      {/* Fondo */}
       <ImageBackground
         source={require('../assets/imagenes/imagenFondo.jpg')}
         style={styles.fondoImagen}
         resizeMode="cover"
       >
-        {/* Scroll global */}
         <ScrollView contentContainerStyle={styles.scrollContent}>
 
-          {/* Usuarios */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Usuarios</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity style={styles.btnAdd} onPress={() => openModalUser()}>
-                <Text style={styles.btnAddText}>+ Añadir usuario</Text>
+                <Text style={styles.btnAddText}>Añadir usuario +</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btnAdd, { backgroundColor: '#444' }]}
@@ -468,54 +465,37 @@ const usuariosFiltrados = usuarios.filter((u) => {
             />
 
             <View style={styles.tableHeader}>
-              <TouchableOpacity
-                style={[styles.cell, { flex: 1 }]}
-                onPress={() => ordenarUsuarios('nombre')}
-              >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                  Nombre {ordenUsuarios.campo === 'nombre' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
-                </Text>
-              </TouchableOpacity>
+  <TouchableOpacity style={[styles.cell, { flex: 1 }]} onPress={() => ordenarUsuarios('nombre')}>
+    <Text style={{ fontWeight: 'bold', color: '#444' }}>
+      Nombre {ordenUsuarios.campo === 'nombre' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
+    </Text>
+  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.cell, { flex: 1 }]}
-                onPress={() => ordenarUsuarios('apellidos')}
-              >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                  Apellidos{' '}
-                  {ordenUsuarios.campo === 'apellidos' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
-                </Text>
-              </TouchableOpacity>
+  <TouchableOpacity style={[styles.cell, { flex: 1 }]} onPress={() => ordenarUsuarios('apellidos')}>
+    <Text style={{ fontWeight: 'bold', color: '#444' }}>
+      Apellidos {ordenUsuarios.campo === 'apellidos' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
+    </Text>
+  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.cell, { flex: 2 }]}
-                onPress={() => ordenarUsuarios('email')}
-              >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                  Email {ordenUsuarios.campo === 'email' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
-                </Text>
-              </TouchableOpacity>
+  <TouchableOpacity style={[styles.cell, { flex: 2 }]} onPress={() => ordenarUsuarios('email')}>
+    <Text style={{ fontWeight: 'bold', color: '#444' }}>
+      Email {ordenUsuarios.campo === 'email' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
+    </Text>
+  </TouchableOpacity>
 
-              <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#fff' }]}>
-                Empresa
-              </Text>
-              <TouchableOpacity
-                style={[styles.cell, { flex: 1 }]}
-                onPress={() => ordenarUsuarios('rol')}
-              >
-                <Text style={{ fontWeight: 'bold', color: '#fff' }}>
-                  Rol {ordenUsuarios.campo === 'rol' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
-                </Text>
-              </TouchableOpacity>
-              <Text
-                style={[
-                  styles.cell,
-                  { flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#fff' },
-                ]}
-              >
-                Acciones
-              </Text>
-            </View>
+<TouchableOpacity style={[styles.cell, { flex: 2 }]} onPress={() => ordenarUsuarios('empresa')}>
+  <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Empresa</Text>
+</TouchableOpacity>
+
+  <TouchableOpacity style={[styles.cell, { flex: 1 }]} onPress={() => ordenarUsuarios('rol')}>
+    <Text style={{ fontWeight: 'bold', color: '#444' }}>
+      Rol {ordenUsuarios.campo === 'rol' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
+    </Text>
+  </TouchableOpacity>
+
+  <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#444' }]}>Acciones</Text>
+</View>
+
 
             <FlatList
               data={usuariosOrdenados}
@@ -531,7 +511,7 @@ const usuariosFiltrados = usuarios.filter((u) => {
             <Text style={styles.sectionTitle}>Empresas</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity style={styles.btnAdd} onPress={() => openModalEmpresa()}>
-                <Text style={styles.btnAddText}>+ Añadir empresa</Text>
+                <Text style={styles.btnAddText}>Añadir empresa +</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.btnAdd, { backgroundColor: '#444' }]}
@@ -547,34 +527,18 @@ const usuariosFiltrados = usuarios.filter((u) => {
               onChangeText={setFiltroEmpresas}
               style={styles.inputFiltro}
             />
-
-            <View style={styles.tableHeader}>
-              <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#fff' }]}>
-                Nombre
-              </Text>
-              <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#fff' }]}>
-                Dirección
-              </Text>
-              <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#fff' }]}>Email</Text>
-              <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#fff' }]}>
-                Teléfono
-              </Text>
-              <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#fff' }]}>Sector</Text>
-              <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#fff' }]}>
-                Fecha Alta
-              </Text>
-              <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#fff' }]}>
-                Usuarios
-              </Text>
-              <Text
-                style={[
-                  styles.cell,
-                  { flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#fff' },
-                ]}
-              >
-                Acciones
-              </Text>
-            </View>
+              <View style={styles.tableHeader}>
+    <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#444' }]}>Nombre</Text>
+    <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#444' }]}>Dirección</Text>
+    <Text style={[styles.cell, { flex: 2, fontWeight: 'bold', color: '#444' }]}>Email</Text>
+    <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Teléfono</Text>
+    <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Sector</Text>
+    <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Fecha Alta</Text>
+    <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Usuarios</Text>
+    <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', textAlign: 'center', color: '#444' }]}>
+      Acciones
+    </Text>
+  </View>
 
             <FlatList
               data={empresasFiltradas}
@@ -585,11 +549,9 @@ const usuariosFiltrados = usuarios.filter((u) => {
             />
           </View>
 
-          {/* Gráficos */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Gráficos</Text>
 
-            {/* Usuarios por empresa */}
             <Text style={styles.chartTitle}>Usuarios por Empresa</Text>
             <View style={{ width: screenWidth * 0.9, height: 250 }}>
               <BarChart
@@ -630,7 +592,6 @@ const usuariosFiltrados = usuarios.filter((u) => {
               </PieChart>
             </View>
 
-            {/* Empresas por sector */}
             <Text style={styles.chartTitle}>Empresas por Sector</Text>
             <View style={{ width: screenWidth * 0.9, height: 250 }}>
               <BarChart
@@ -650,7 +611,6 @@ const usuariosFiltrados = usuarios.filter((u) => {
           </View>
         </ScrollView>
 
-        {/* Modal usuario */}
         <Modal visible={modalVisibleUser} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
@@ -716,8 +676,6 @@ const usuariosFiltrados = usuarios.filter((u) => {
             </View>
           </View>
         </Modal>
-
-        {/* Modal empresa */}
         <Modal visible={modalVisibleEmpresa} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
@@ -807,12 +765,13 @@ const styles = StyleSheet.create({
   scrollContent: { padding: 20, minHeight: '100%' },
 
   section: { marginBottom: 40 },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-  },
+sectionTitle: {
+  fontSize: 24,
+  fontWeight: 'bold',
+  color: '#2b7a78',
+  textAlign: 'center',
+  marginBottom: 10,
+},
 
   table: {
     maxHeight: 300,
@@ -821,10 +780,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   tableHeader: {
-    flexDirection: 'row',
-    backgroundColor: '#444',
-    paddingVertical: 8,
-  },
+  flexDirection: 'row',
+  backgroundColor: '#2b7a78',
+  paddingVertical: 8,
+  borderBottomWidth: 1,
+  borderColor: '#ccc',
+},
+
+cell: {
+  paddingHorizontal: 6,
+  paddingVertical: 4,
+  fontSize: 14,
+  color: '#444',
+},
   row: {
     flexDirection: 'row',
     borderBottomWidth: 1,
@@ -833,13 +801,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     backgroundColor: '#fff',
   },
-  cell: {
-    paddingHorizontal: 6,
-    paddingVertical: 4,
-    fontSize: 14,
-    color: '#000',
-  },
-
   btnAdd: {
     backgroundColor: '#0a7d0a',
     paddingVertical: 8,

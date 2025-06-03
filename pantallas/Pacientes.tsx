@@ -389,7 +389,7 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           style={styles.fondoImagen}
           resizeMode="cover"
         />
-
+{Platform.OS === 'web' ? (
       <View style={styles.contenido}>
           <View style={styles.barraFiltros}>
   <TextInput
@@ -439,6 +439,56 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
   <Ionicons name="add" size={24} color="#fff" />
 </TouchableOpacity>
       </View>
+) : (
+  <ScrollView style={styles.contenido} contentContainerStyle={{ paddingBottom: 100 }}>
+    <View style={styles.barraFiltros}>
+      <TextInput
+        placeholder="Buscar por nombre..."
+        style={styles.inputBusqueda}
+        value={filtroBusqueda}
+        onChangeText={setFiltroBusqueda}
+      />
+      <Picker
+        selectedValue={filtroFiltroUnico}
+        onValueChange={setFiltroFiltroUnico}
+        style={styles.pickerFiltro}
+      >
+        <Picker.Item label="Todos" value="todos" />
+        <Picker.Item label="Nombre Ascendente" value="nombre_asc" />
+        <Picker.Item label="Nombre Descendente" value="nombre_desc" />
+        <Picker.Item label="Activo" value="activo" />
+        <Picker.Item label="Inactivo" value="inactivo" />
+        <Picker.Item label="Edad Ascendente" value="edad_asc" />
+        <Picker.Item label="Edad Descendente" value="edad_desc" />
+      </Picker>
+    </View>
+
+    <FlatList
+      data={listaFiltrada}
+      renderItem={renderPaciente}
+      keyExtractor={(item, index) => item.id || index.toString()}
+      contentContainerStyle={[styles.lista, esWeb && { paddingHorizontal: 40 }]}
+      showsVerticalScrollIndicator={false}
+      numColumns={esWeb ? 3 : 1}
+      columnWrapperStyle={esWeb ? { justifyContent: 'space-between' } : undefined}
+      key={esWeb ? 'web' : 'mobile'}
+    />
+
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        bottom: 20,
+        right: 20,
+        backgroundColor: '#2b7a78',
+        padding: 15,
+        borderRadius: 30,
+      }}
+      onPress={abrirModalAlta}
+    >
+      <Ionicons name="add" size={24} color="#fff" />
+    </TouchableOpacity>
+  </ScrollView>
+)}
 <Modal visible={modalAltaVisible} animationType="slide" transparent={true} onRequestClose={cerrarModalAlta}>
         <View style={styles.modalBackground}>
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContent}>
