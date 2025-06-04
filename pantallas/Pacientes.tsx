@@ -26,13 +26,10 @@ import { obtenerPacientes, eliminarPaciente, agregarPaciente,actualizarPaciente 
 
 import { useWindowDimensions } from 'react-native';
 import { useUsuario } from '../context/UsuarioContext';
-import { Video, ResizeMode } from 'expo-av';
 
 
 export default function Pacientes({ navigation }: any) {
   const [pacientes, setPacientes] = useState<any[]>([]);
-  const [expandidoId, setExpandidoId] = useState<string | null>(null);
-  const [alturaAnimada] = useState(new Animated.Value(180));
   const { width } = useWindowDimensions();
   const esWeb = Platform.OS === 'web' && width > 800;
   const { usuario } = useUsuario();
@@ -40,6 +37,8 @@ const [modalEditarVisible, setModalEditarVisible] = useState(false);
 const [pacienteEditar, setPacienteEditar] = useState(null);
 const [filtroBusqueda, setFiltroBusqueda] = useState('');
 const [filtroFiltroUnico, setFiltroFiltroUnico] = useState('todos');
+const [pacienteDetalle, setPacienteDetalle] = useState(null);
+const [modalDetalleVisible, setModalDetalleVisible] = useState(false);
 
 
 const estilosDinamicos = StyleSheet.create({
@@ -71,31 +70,12 @@ const estilosDinamicos = StyleSheet.create({
     cargarPacientes();
   }, []);
 
-  const manejarExpandir = (id: string) => {
-    if (expandidoId === id) {
-      Animated.timing(alturaAnimada, {
-        toValue: 180,
-        duration: 300,
-        useNativeDriver: false,
-      }).start(() => setExpandidoId(null));
-    } else {
-      setExpandidoId(id);
-      Animated.timing(alturaAnimada, {
-        toValue: 360,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    }
-  };
-
   const confirmarEliminar = (id: string) => {
   if (Platform.OS === 'web') {
-    // Confirm nativo de navegador
     if (window.confirm('¿Estás seguro de que quieres eliminar este paciente?')) {
       eliminarPacienteConfirmado(id);
     }
   } else {
-    // Para iOS y Android
     Alert.alert(
       'Confirmar eliminación',
       '¿Estás seguro de que quieres eliminar este paciente?',
@@ -108,7 +88,15 @@ const estilosDinamicos = StyleSheet.create({
   }
 };
 
+const abrirModalDetalle = (paciente) => {
+  setPacienteDetalle(paciente);
+  setModalDetalleVisible(true);
+};
 
+const cerrarModalDetalle = () => {
+  setPacienteDetalle(null);
+  setModalDetalleVisible(false);
+};
 const eliminarPacienteConfirmado = async (id: string) => {
   try {
     await eliminarPaciente(id);
@@ -120,7 +108,8 @@ const eliminarPacienteConfirmado = async (id: string) => {
 };
 
 
- const manejarEditar = (paciente) => {
+const manejarEditar = (paciente) => {
+  cerrarModalDetalle(); 
   abrirModalEditar(paciente);
 };
 
@@ -140,7 +129,7 @@ const refrescarPacientes = async () => {
     if (m < 0 || (m === 0 && hoy.getDate() < nacimiento.getDate())) edad--;
     return edad;
   };
-  // Dentro del componente Pacientes
+
 const [modalAltaVisible, setModalAltaVisible] = useState(false);
 const [formData, setFormData] = useState({
   nombre: '',
@@ -166,7 +155,6 @@ const handleChange = (field: string, value: any) => {
 const abrirModalAlta = () => setModalAltaVisible(true);
 const cerrarModalAlta = () => {
   setModalAltaVisible(false);
-  // Limpiar formulario si quieres
   setFormData({
     nombre: '',
     apellidos: '',
@@ -192,8 +180,7 @@ const guardarPaciente = async () => {
     };
     await agregarPaciente(pacienteFormateado);
     cerrarModalAlta();
-    await refrescarPacientes(); // Aquí refrescas la lista
-    // Resetear formulario si quieres
+    await refrescarPacientes();
     setFormData({
       nombre: '',
       apellidos: '',
@@ -216,14 +203,17 @@ const guardarPaciente = async () => {
 
 
 const renderPaciente = ({ item }: any) => {
-  const expandido = expandidoId === item.id;
+  
   const colorFondo = item.estado === 'Activo' ? '#e6f7ef' : '#fdecea';
   const colorTextoEstado = item.estado === 'Activo' ? '#27ae60' : '#c0392b';
   const edad = calcularEdad(item.fechaNacimiento);
 
   return (
-    <View style={[estilosDinamicos.card, expandido && styles.cardExpandido, { backgroundColor: colorFondo }]}>
-      <TouchableOpacity onPress={() => manejarExpandir(item.id)}>
+    <View style={[
+  estilosDinamicos.card,
+  { backgroundColor: colorFondo }
+]}>
+      <TouchableOpacity onPress={() => abrirModalDetalle(item)}>
         <View style={styles.headerCard}>
           <Ionicons name="person-circle-outline" size={60} color="#2b7a78" />
           <View style={{ marginLeft: 15, flex: 1 }}>
@@ -249,9 +239,7 @@ const renderPaciente = ({ item }: any) => {
           <Text style={styles.infoCard}>{item.telefono}</Text>
         </View>
 
-        {expandido && (
-          <>
-            <TouchableOpacity style={styles.botonCerrar} onPress={() => manejarExpandir(item.id)}>
+            <TouchableOpacity style={styles.botonCerrar} onPress={() => abrirModalDetalle(item.id)}>
               <Ionicons name="close-circle" size={28} color="#e74c3c" />
             </TouchableOpacity>
 
@@ -268,8 +256,6 @@ const renderPaciente = ({ item }: any) => {
                 <Ionicons name="trash-outline" size={28} color="#e74c3c" />
               </TouchableOpacity>
             </View>
-          </>
-        )}
       </TouchableOpacity>
     </View>
   );
@@ -338,22 +324,21 @@ const guardarPacienteEditar = async () => {
 const aplicarFiltrosYOrden = () => {
   let lista = [...pacientes];
 
-  // Filtrar por búsqueda (nombre + apellidos)
   if (filtroBusqueda.trim() !== '') {
-    const busqLower = filtroBusqueda.trim().toLowerCase();
-    lista = lista.filter((p) => 
-      `${p.nombre} ${p.apellidos}`.toLowerCase().includes(busqLower)
-    );
-  }
+  const busqLower = filtroBusqueda.trim().toLowerCase();
+  lista = lista.filter((p) =>
+    `${p.nombre} ${p.apellidos}`.toLowerCase().includes(busqLower) ||
+    p.nombre.toLowerCase().includes(busqLower) ||
+    p.apellidos.toLowerCase().includes(busqLower)
+  );
+}
 
-  // Filtrar por estado
   if (filtroFiltroUnico === 'activo') {
     lista = lista.filter(p => p.estado === 'Activo');
   } else if (filtroFiltroUnico === 'inactivo') {
     lista = lista.filter(p => p.estado === 'Inactivo');
   }
 
-  // Ordenar según filtroFiltroUnico
   if (filtroFiltroUnico === 'nombre_asc') {
     lista.sort((a, b) => a.nombre.localeCompare(b.nombre));
   } else if (filtroFiltroUnico === 'nombre_desc') {
@@ -368,6 +353,37 @@ const aplicarFiltrosYOrden = () => {
 };
 
 const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBusqueda, filtroFiltroUnico]);
+
+const PacienteCard = ({ item, onPress }: any) => {
+  const edad = calcularEdad(item.fechaNacimiento);
+  const colorFondo = item.estado === 'Activo' ? '#e6f7ef' : '#fdecea';
+  const colorTextoEstado = item.estado === 'Activo' ? '#27ae60' : '#c0392b';
+
+  return (
+    <View style={[estilosDinamicos.card, { backgroundColor: colorFondo }]}>
+      <TouchableOpacity onPress={onPress}>
+        <View style={styles.headerCard}>
+          <Ionicons name="person-circle-outline" size={60} color="#2b7a78" />
+          <View style={{ marginLeft: 15, flex: 1 }}>
+            <Text style={styles.nombre}>{item.nombre} {item.apellidos}</Text>
+            <Text style={[styles.estado, { color: colorTextoEstado }]}>{item.estado}</Text>
+          </View>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.labelCard}>Edad:</Text>
+          <Text style={styles.infoCard}>{edad} años</Text>
+        </View>
+
+        <View style={styles.infoRow}>
+          <Text style={styles.labelCard}>Diagnóstico:</Text>
+          <Text style={styles.infoCard}>{item.diagnostico || '-'}</Text>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 
 
   return (
@@ -414,16 +430,30 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
 </View>
 
 
-<FlatList
-  data={listaFiltrada}
-  renderItem={renderPaciente}
-  keyExtractor={(item, index) => item.id || index.toString()}
-  contentContainerStyle={[styles.lista, esWeb && { paddingHorizontal: 40 }]}
-  showsVerticalScrollIndicator={false}
-  numColumns={esWeb ? 3 : 1}
-  columnWrapperStyle={esWeb ? { justifyContent: 'space-between' } : undefined}
-  key={esWeb ? 'web' : 'mobile'}
+<View
+  style={[
+    styles.lista,
+    esWeb && {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
+      paddingHorizontal: 40,
+      gap: 20,
+    },
+  ]}
+>
+ {listaFiltrada.map((item) => (
+  <View key={item.id} style={{ width: esWeb ? '30%' : '100%', maxWidth: 400 }}>
+    <PacienteCard
+  item={item}
+  onEditar={manejarEditar}
+  onEliminar={confirmarEliminar}
+  onPress={() => abrirModalDetalle(item)}
 />
+
+  </View>
+))}
+</View>
 
   <TouchableOpacity
   style={{
@@ -468,7 +498,6 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
       renderItem={renderPaciente}
       keyExtractor={(item, index) => item.id || index.toString()}
       contentContainerStyle={[styles.lista, esWeb && { paddingHorizontal: 40 }]}
-      showsVerticalScrollIndicator={false}
       numColumns={esWeb ? 3 : 1}
       columnWrapperStyle={esWeb ? { justifyContent: 'space-between' } : undefined}
       key={esWeb ? 'web' : 'mobile'}
@@ -490,179 +519,146 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
   </ScrollView>
 )}
 <Modal visible={modalAltaVisible} animationType="slide" transparent={true} onRequestClose={cerrarModalAlta}>
-        <View style={styles.modalBackground}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContent}>
-            <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.titulo}>Alta de Paciente</Text>
-                <TouchableOpacity onPress={cerrarModalAlta}>
-                  <Ionicons name="close-circle-outline" size={28} color="#2b7a78" />
-                </TouchableOpacity>
-              </View>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Nombre"
-                value={formData.nombre}
-                onChangeText={(t) => handleChange('nombre', t)}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Apellidos"
-                value={formData.apellidos}
-                onChangeText={(t) => handleChange('apellidos', t)}
-              />
-
-              <Text style={styles.label}>Fecha de nacimiento</Text>
-
-              {Platform.OS === 'web' ? (
-                <input
-                  type="date"
-                  value={formData.fechaNacimiento}
-                  onChange={(e) => handleChange('fechaNacimiento', e.target.value)}
-                  style={{
-                    width: '100%',
-                    marginBottom: 12,
-                    padding: 8,
-                    borderRadius: 5,
-                    border: '1px solid #ccc',
-                    fontSize: 14,
-                  }}
-                />
-              ) : (
-                <>
-                  <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
-                    <Text style={{ color: formData.fechaNacimiento ? '#000' : '#aaa' }}>
-                      {formData.fechaNacimiento || 'Seleccionar fecha'}
-                    </Text>
-                  </TouchableOpacity>
-
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={formData.fechaNacimiento ? new Date(formData.fechaNacimiento) : new Date()}
-                      mode="date"
-                      display="default"
-                      onChange={(event, selectedDate) => {
-                        setShowDatePicker(false);
-                        if (selectedDate) {
-                          const fecha = selectedDate.toISOString().split('T')[0];
-                          handleChange('fechaNacimiento', fecha);
-                        }
-                      }}
-                    />
-                  )}
-                </>
-              )}
-
-              <TextInput
-                style={styles.input}
-                placeholder="DNI"
-                value={formData.dni}
-                onChangeText={(t) => handleChange('dni', t)}
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Email"
-                value={formData.email}
-                onChangeText={(t) => handleChange('email', t)}
-                keyboardType="email-address"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Teléfono"
-                value={formData.telefono}
-                onChangeText={(t) => handleChange('telefono', t)}
-                keyboardType="phone-pad"
-              />
-
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  status={formData.beca ? 'checked' : 'unchecked'}
-                  onPress={() => handleChange('beca', !formData.beca)}
-                />
-                <Text style={styles.checkboxLabel}>Beca</Text>
-              </View>
-              {formData.beca && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Tipo de beca"
-                  value={formData.tipoBeca}
-                  onChangeText={(t) => handleChange('tipoBeca', t)}
-                />
-              )}
-
-              <View style={styles.checkboxRow}>
-                <Checkbox
-                  status={formData.pagado ? 'checked' : 'unchecked'}
-                  onPress={() => handleChange('pagado', !formData.pagado)}
-                />
-                <Text style={styles.checkboxLabel}>Pagado</Text>
-              </View>
-              {formData.pagado && (
-                <>
-                  <Text style={styles.label}>Método de pago</Text>
-                  <Picker
-                    selectedValue={formData.metodoPago}
-                    onValueChange={(value) => handleChange('metodoPago', value)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Efectivo" value="Efectivo" />
-                    <Picker.Item label="Bizum" value="Bizum" />
-                    <Picker.Item label="Transferencia" value="Transferencia" />
-                    <Picker.Item label="Tarjeta" value="Tarjeta" />
-                  </Picker>
-
-                  <View style={styles.checkboxRow}>
-                    <Checkbox
-                      status={formData.recibo ? 'checked' : 'unchecked'}
-                      onPress={() => handleChange('recibo', !formData.recibo)}
-                    />
-                    <Text style={styles.checkboxLabel}>Recibo</Text>
-                  </View>
-                </>
-              )}
-
-              <Text style={styles.label}>Estado</Text>
-              <Picker
-                selectedValue={formData.estado}
-                onValueChange={(itemValue) => handleChange('estado', itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Activo" value="Activo" />
-                <Picker.Item label="Inactivo" value="Inactivo" />
-              </Picker>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Diagnóstico"
-                value={formData.diagnostico}
-                onChangeText={(t) => handleChange('diagnostico', t)}
-              />
-
-              <View style={styles.botonera}>
-                <Button title="Guardar" onPress={guardarPaciente} color="#2b7a78" />
-              </View>
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
-      <Modal visible={modalEditarVisible} animationType="slide" transparent={true} onRequestClose={cerrarModalEditar}>
   <View style={styles.modalBackground}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalContent}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+      <ScrollView
+  contentContainerStyle={{ paddingBottom: 20 }}
+  showsVerticalScrollIndicator={false}
+>
         <View style={styles.modalHeader}>
-          <Text style={styles.titulo}>Editar Paciente</Text>
-          <TouchableOpacity onPress={cerrarModalEditar}>
-            <Ionicons name="close-circle-outline" size={28} color="#2b7a78" />
+          <Text style={styles.modalTitle}>Añadir Paciente</Text>
+          <TouchableOpacity onPress={cerrarModalAlta}>
+            <Ionicons name="close-circle" size={28} color="red" />
           </TouchableOpacity>
         </View>
 
+        <Text style={styles.modalLabel}>Nombre:</Text>
+        <TextInput style={styles.modalInput} placeholder="Nombre" value={formData.nombre} onChangeText={(t) => handleChange('nombre', t)} />
+
+        <Text style={styles.modalLabel}>Apellidos:</Text>
+        <TextInput style={styles.modalInput} placeholder="Apellidos" value={formData.apellidos} onChangeText={(t) => handleChange('apellidos', t)} />
+
+        <Text style={styles.modalLabel}>Fecha de nacimiento:</Text>
+        {Platform.OS === 'web' ? (
+          <input
+            type="date"
+            value={formData.fechaNacimiento}
+            onChange={(e) => handleChange('fechaNacimiento', e.target.value)}
+            style={styles.webDateInput}
+          />
+        ) : (
+          <>
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.modalInput}>
+              <Text style={{ color: formData.fechaNacimiento ? '#000' : '#aaa' }}>
+                {formData.fechaNacimiento || 'Seleccionar fecha'}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={formData.fechaNacimiento ? new Date(formData.fechaNacimiento) : new Date()}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    const fecha = selectedDate.toISOString().split('T')[0];
+                    handleChange('fechaNacimiento', fecha);
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+
+        <Text style={styles.modalLabel}>DNI:</Text>
+        <TextInput style={styles.modalInput} placeholder="DNI" value={formData.dni} onChangeText={(t) => handleChange('dni', t)} />
+
+        <Text style={styles.modalLabel}>Email:</Text>
+        <TextInput style={styles.modalInput} placeholder="Email" value={formData.email} onChangeText={(t) => handleChange('email', t)} keyboardType="email-address" />
+
+        <Text style={styles.modalLabel}>Teléfono:</Text>
+        <TextInput style={styles.modalInput} placeholder="Teléfono" value={formData.telefono} onChangeText={(t) => handleChange('telefono', t)} keyboardType="phone-pad" />
+
+        <View style={styles.checkboxRow}>
+          <Checkbox status={formData.beca ? 'checked' : 'unchecked'} onPress={() => handleChange('beca', !formData.beca)} />
+          <Text style={styles.checkboxLabel}>Beca</Text>
+        </View>
+        {formData.beca && (
+          <>
+            <Text style={styles.modalLabel}>Tipo de beca:</Text>
+            <TextInput style={styles.modalInput} placeholder="Tipo de beca" value={formData.tipoBeca} onChangeText={(t) => handleChange('tipoBeca', t)} />
+          </>
+        )}
+
+        <View style={styles.checkboxRow}>
+          <Checkbox status={formData.pagado ? 'checked' : 'unchecked'} onPress={() => handleChange('pagado', !formData.pagado)} />
+          <Text style={styles.checkboxLabel}>Pagado</Text>
+        </View>
+        {formData.pagado && (
+          <>
+            <Text style={styles.modalLabel}>Método de pago:</Text>
+            <Picker selectedValue={formData.metodoPago} onValueChange={(value) => handleChange('metodoPago', value)} style={styles.picker}>
+              <Picker.Item label="Efectivo" value="Efectivo" />
+              <Picker.Item label="Bizum" value="Bizum" />
+              <Picker.Item label="Transferencia" value="Transferencia" />
+              <Picker.Item label="Tarjeta" value="Tarjeta" />
+            </Picker>
+
+            <View style={styles.checkboxRow}>
+              <Checkbox status={formData.recibo ? 'checked' : 'unchecked'} onPress={() => handleChange('recibo', !formData.recibo)} />
+              <Text style={styles.checkboxLabel}>Recibo</Text>
+            </View>
+          </>
+        )}
+
+        <Text style={styles.modalLabel}>Estado:</Text>
+        <Picker selectedValue={formData.estado} onValueChange={(itemValue) => handleChange('estado', itemValue)} style={styles.picker}>
+          <Picker.Item label="Activo" value="Activo" />
+          <Picker.Item label="Inactivo" value="Inactivo" />
+        </Picker>
+
+        <Text style={styles.modalLabel}>Diagnóstico:</Text>
+        <TextInput style={styles.modalInput} placeholder="Diagnóstico" value={formData.diagnostico} onChangeText={(t) => handleChange('diagnostico', t)} />
+
+        <TouchableOpacity style={styles.botonGuardar} onPress={guardarPaciente}>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>GUARDAR PACIENTE</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </View>
+</Modal>
+
+<Modal
+  visible={modalEditarVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={cerrarModalEditar}
+>
+  <View style={styles.modalBackground}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.modalContent}
+    >
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Editar Paciente</Text>
+          <TouchableOpacity onPress={cerrarModalEditar}>
+            <Ionicons name="close-circle-outline" size={28} color="#e74c3c" />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={styles.label}>Nombre:</Text>
         <TextInput
           style={styles.input}
           placeholder="Nombre"
           value={formEditarData.nombre}
           onChangeText={(t) => handleChangeEditar('nombre', t)}
         />
+
+        <Text style={styles.label}>Apellidos:</Text>
         <TextInput
           style={styles.input}
           placeholder="Apellidos"
@@ -670,8 +666,7 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           onChangeText={(t) => handleChangeEditar('apellidos', t)}
         />
 
-        <Text style={styles.label}>Fecha de nacimiento</Text>
-
+        <Text style={styles.label}>Fecha de nacimiento:</Text>
         {Platform.OS === 'web' ? (
           <input
             type="date"
@@ -693,10 +688,13 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
                 {formEditarData.fechaNacimiento || 'Seleccionar fecha'}
               </Text>
             </TouchableOpacity>
-
             {showDatePickerEditar && (
               <DateTimePicker
-                value={formEditarData.fechaNacimiento ? new Date(formEditarData.fechaNacimiento) : new Date()}
+                value={
+                  formEditarData.fechaNacimiento
+                    ? new Date(formEditarData.fechaNacimiento)
+                    : new Date()
+                }
                 mode="date"
                 display="default"
                 onChange={(event, selectedDate) => {
@@ -711,12 +709,15 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           </>
         )}
 
+        <Text style={styles.label}>DNI:</Text>
         <TextInput
           style={styles.input}
           placeholder="DNI"
           value={formEditarData.dni}
           onChangeText={(t) => handleChangeEditar('dni', t)}
         />
+
+        <Text style={styles.label}>Email:</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -724,6 +725,8 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           onChangeText={(t) => handleChangeEditar('email', t)}
           keyboardType="email-address"
         />
+
+        <Text style={styles.label}>Teléfono:</Text>
         <TextInput
           style={styles.input}
           placeholder="Teléfono"
@@ -740,12 +743,15 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           <Text style={styles.checkboxLabel}>Beca</Text>
         </View>
         {formEditarData.beca && (
-          <TextInput
-            style={styles.input}
-            placeholder="Tipo de beca"
-            value={formEditarData.tipoBeca}
-            onChangeText={(t) => handleChangeEditar('tipoBeca', t)}
-          />
+          <>
+            <Text style={styles.label}>Tipo de beca:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Tipo de beca"
+              value={formEditarData.tipoBeca}
+              onChangeText={(t) => handleChangeEditar('tipoBeca', t)}
+            />
+          </>
         )}
 
         <View style={styles.checkboxRow}>
@@ -757,7 +763,7 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
         </View>
         {formEditarData.pagado && (
           <>
-            <Text style={styles.label}>Método de pago</Text>
+            <Text style={styles.label}>Método de pago:</Text>
             <Picker
               selectedValue={formEditarData.metodoPago}
               onValueChange={(value) => handleChangeEditar('metodoPago', value)}
@@ -779,7 +785,7 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           </>
         )}
 
-        <Text style={styles.label}>Estado</Text>
+        <Text style={styles.label}>Estado:</Text>
         <Picker
           selectedValue={formEditarData.estado}
           onValueChange={(itemValue) => handleChangeEditar('estado', itemValue)}
@@ -789,6 +795,7 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           <Picker.Item label="Inactivo" value="Inactivo" />
         </Picker>
 
+        <Text style={styles.label}>Diagnóstico:</Text>
         <TextInput
           style={styles.input}
           placeholder="Diagnóstico"
@@ -796,13 +803,92 @@ const listaFiltrada = useMemo(() => aplicarFiltrosYOrden(), [pacientes, filtroBu
           onChangeText={(t) => handleChangeEditar('diagnostico', t)}
         />
 
-          <View style={styles.botonera}>
-            <Button title="Guardar Cambios" onPress={guardarPacienteEditar} color="#2b7a78" />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </View>
-  </Modal>
+        <View style={styles.botonera}>
+          <Button title="Guardar Cambios" onPress={guardarPacienteEditar} color="#2b7a78" />
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </View>
+</Modal>
+<Modal
+  visible={modalDetalleVisible}
+  animationType="slide"
+  transparent={true}
+  onRequestClose={cerrarModalDetalle}
+>
+  <View style={styles.modalBackground}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.modalContent}
+    >
+      <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>Detalle del Paciente</Text>
+          <TouchableOpacity onPress={cerrarModalDetalle}>
+            <Ionicons name="close-circle-outline" size={28} color="#e74c3c" />
+          </TouchableOpacity>
+        </View>
+
+        {pacienteDetalle && (
+          <>
+            <Text style={styles.modalLabel}>Nombre:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.nombre}</Text>
+
+            <Text style={styles.modalLabel}>Apellidos:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.apellidos}</Text>
+
+            <Text style={styles.modalLabel}>Fecha de nacimiento:</Text>
+            <Text style={styles.modalInput}>
+              {pacienteDetalle.fechaNacimiento?.toDate
+                ? pacienteDetalle.fechaNacimiento.toDate().toLocaleDateString()
+                : pacienteDetalle.fechaNacimiento}
+            </Text>
+
+            <Text style={styles.modalLabel}>DNI:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.dni}</Text>
+
+            <Text style={styles.modalLabel}>Email:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.email}</Text>
+
+            <Text style={styles.modalLabel}>Teléfono:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.telefono}</Text>
+
+            <Text style={styles.modalLabel}>Estado:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.estado}</Text>
+
+            {pacienteDetalle.beca && (
+              <>
+                <Text style={styles.modalLabel}>Tipo de beca:</Text>
+                <Text style={styles.modalInput}>{pacienteDetalle.tipoBeca}</Text>
+              </>
+            )}
+
+            {pacienteDetalle.pagado && (
+              <>
+                <Text style={styles.modalLabel}>Método de pago:</Text>
+                <Text style={styles.modalInput}>{pacienteDetalle.metodoPago}</Text>
+
+                <Text style={styles.modalLabel}>Recibo:</Text>
+                <Text style={styles.modalInput}>{pacienteDetalle.recibo ? 'Sí' : 'No'}</Text>
+              </>
+            )}
+
+            <Text style={styles.modalLabel}>Diagnóstico:</Text>
+            <Text style={styles.modalInput}>{pacienteDetalle.diagnostico || '-'}</Text>
+          </>
+        )}
+        <View style={styles.iconosAcciones}>
+  <TouchableOpacity onPress={() => manejarEditar(pacienteDetalle)} style={styles.iconoAccion}>
+    <Ionicons name="create-outline" size={28} color="#2b7a78" />
+  </TouchableOpacity>
+  <TouchableOpacity onPress={() => confirmarEliminar(pacienteDetalle.id)} style={styles.iconoAccionEliminar}>
+    <Ionicons name="trash-outline" size={28} color="#e74c3c" />
+  </TouchableOpacity>
+</View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  </View>
+</Modal>
 </View>
   );
 }
@@ -869,13 +955,22 @@ modalContainer: {
   maxHeight: '90%',
   padding: 20,
 },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    width: '90%',
-    maxHeight: '90%',
-    padding: 20,
-  },
+modalContent: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 24,
+  width: 600,
+  maxWidth: '90%',
+  alignSelf: 'center',
+  maxHeight: '85%',
+  justifyContent: 'flex-start',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.2,
+  shadowRadius: 8,
+  elevation: 5,
+},
+
 modalHeader: {
   flexDirection: 'row',
   justifyContent: 'space-between',
@@ -1044,6 +1139,46 @@ iconoAccion: {
 },
 iconoAccionEliminar: {
   padding: 4,
+},
+modalTitle: {
+  fontSize: 22,
+  fontWeight: '700',
+  color: '#2b7a78',
+  textAlign: 'center',
+  flex: 1,
+},
+modalLabel: {
+  fontWeight: '600',
+  marginTop: 12,
+  marginBottom: 4,
+  color: '#333',
+},
+modalInput: {
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 16,
+},
+webDateInput: {
+  width: '100%',
+  marginBottom: 12,
+  padding: 10,
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderStyle: 'solid',
+  fontSize: 16,
+},
+
+botonGuardar: {
+  marginTop: 20,
+  backgroundColor: '#2b7a78',
+  padding: 14,
+  borderRadius: 8,
+  alignItems: 'center',
 },
 
 });
