@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ImageBackground, TextInput, FlatList} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, ImageBackground, TextInput, FlatList, Alert} from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { useUsuario } from '../context/UsuarioContext';
 import { obtenerCitasPorUsuario } from '../firebase/firestoreService'; 
@@ -14,6 +14,9 @@ import moment from 'moment';
 import 'moment/locale/es';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
+
 
 LocaleConfig.locales['es'] = {
   monthNames: ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'],
@@ -27,7 +30,8 @@ LocaleConfig.defaultLocale = 'es';
 
 export default function CalendarioCitas() {
   const { usuario } = useUsuario();
-  const navigation = useNavigation();
+type NavigationProp = StackNavigationProp<RootStackParamList, 'CalendarioCitas'>;
+const navigation = useNavigation<NavigationProp>();
   const [citas, setCitas] = useState<any[]>([]);
   const [marcaciones, setMarcaciones] = useState({});
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
@@ -178,8 +182,37 @@ const citasConNombres = citasUsuario
       alert('Error al eliminar');
     }
   };
+  const confirmarEliminarCita = (id: string) => {
+  if (Platform.OS === 'web') {
+      if (window.confirm('¿Estás seguro de que quieres eliminar esta Cita')) {
+        eliminarCita(id);
+      }
+    } else {
+      Alert.alert(
+        'Confirmar eliminación',
+        '¿Estás seguro de que quieres eliminar esta Cita?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Eliminar', style: 'destructive', onPress: () => eliminarCita(id) },
+        ],
+        { cancelable: true }
+      );
+    }
+};
+
+const yaExisteCitaParaPaciente = () => {
+  return citas.some(c =>
+    c.pacienteId === pacienteSeleccionado &&
+    c.fechaInicio.toDate().getTime() === fechaInicio?.getTime()
+  );
+};
+
   
   const guardarEdicion = async () => {
+      if (yaExisteCitaParaPaciente()) {
+    alert('Este paciente ya tiene una cita a esta hora.');
+    return;
+  }
     if (!citaEditando) return;
     try {
       await updateDoc(doc(db, 'citas', citaEditando.id), {
@@ -205,13 +238,10 @@ const citasConNombres = citasUsuario
           <Text style={styles.navText}>Volver</Text>
         </TouchableOpacity>
         <Text style={styles.navTitle}>Calendario de Citas</Text>
-        <TouchableOpacity
-              style={styles.navItem}
-              onPress={() => navigation.navigate('Perfil')}
-            >
-              <Ionicons name="person-circle-outline" size={28} color="#ffffff" />
-              <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
-            </TouchableOpacity>
+        <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Perfil')}>
+                        <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
+                        <Ionicons name="person-circle-outline" size={28} color="#fff" />
+                      </TouchableOpacity>
       </View>
 
       {esWeb ? (
@@ -256,24 +286,23 @@ const citasConNombres = citasUsuario
 )          
             .map((cita, index) => (
     <View key={index} style={styles.citaItem}>
-     <View style={[styles.citaItem, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
-    <View style={{ flex: 1 }}>
-        <Text style={styles.citaHora}>
-            {new Date(cita.fechaInicio.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(cita.fechaFin.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </Text>
-        <Text style={styles.citaMotivo}>
-            {cita.nombrePaciente} (con {cita.nombreProfesional})
-        </Text>
-    </View>
-    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <TouchableOpacity onPress={() => abrirModalEditar(cita)}>
-            <Ionicons name="create-outline" size={22} color="#2b7a78" style={{ marginLeft: 15 }} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => eliminarCita(cita.id)}>
-            <Ionicons name="trash-outline" size={22} color="red" style={{ marginLeft: 10 }} />
-        </TouchableOpacity>
-    </View>
-</View>
+  <View style={{ flex: 1 }}>
+    <Text style={styles.citaHora}>
+      {new Date(cita.fechaInicio.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(cita.fechaFin.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    </Text>
+    <Text style={styles.citaMotivo}>
+      {cita.nombrePaciente} (con {cita.nombreProfesional})
+    </Text>
+  </View>
+
+  <View style={styles.iconosAcciones}>
+    <TouchableOpacity onPress={() => abrirModalEditar(cita)}>
+      <Ionicons name="create-outline" size={22} color="#2b7a78" />
+    </TouchableOpacity>
+    <TouchableOpacity onPress={() => confirmarEliminarCita(cita.id)}>
+      <Ionicons name="trash-outline" size={22} color="red" style={{ marginLeft: 10 }} />
+    </TouchableOpacity>
+  </View>
 </View>
 
             ))
@@ -320,7 +349,10 @@ const citasConNombres = citasUsuario
     />
     {mostrarSugerencias && (
         <FlatList
-            data={pacientes.filter(p => p.nombre.toLowerCase().includes(busquedaPaciente.toLowerCase()))}
+            data={pacientes.filter(p =>
+  `${p.nombre.toLowerCase()} ${p.apellidos?.toLowerCase() || ''}`.includes(busquedaPaciente.toLowerCase())
+)
+}
             keyExtractor={item => item.id}
             renderItem={({ item }) => (
                 <TouchableOpacity
@@ -438,23 +470,30 @@ const citasConNombres = citasUsuario
 <TouchableOpacity style={styles.botonGuardar} onPress={guardarCita}>
     <Text style={styles.textoBoton}>GUARDAR CITA</Text>
 </TouchableOpacity>
-
-<TouchableOpacity style={styles.botonCancelar} onPress={() => setModalVisible(false)}>
-    <Text style={styles.textoBoton}>CANCELAR</Text>
-</TouchableOpacity>
+<View style={{ position: 'absolute', top: 10, right: 10 }}>
+  <TouchableOpacity onPress={() => setModalVisible(false)}>
+    <Ionicons name="close-circle" size={28} color="#e74c3c" />
+  </TouchableOpacity>
+</View>
     </View>
   </View>
 </Modal>
 <Modal visible={modalEditarVisible} transparent animationType="slide">
-    <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
-        <View style={{
-            backgroundColor: 'white',
-            padding: 20,
-            borderRadius: 10,
-            maxWidth: 500,
-            width: '100%',
-            alignSelf: 'center',
-        }}>
+  <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 20 }}>
+    <View style={{
+      backgroundColor: 'white',
+      padding: 20,
+      borderRadius: 10,
+      maxWidth: 500,
+      width: '100%',
+      alignSelf: 'center',
+    }}>
+      {/* Icono cerrar */}
+      <View style={{ position: 'absolute', top: 10, right: 10 }}>
+        <TouchableOpacity onPress={() => setModalEditarVisible(false)}>
+          <Ionicons name="close-circle" size={28} color="#e74c3c" />
+        </TouchableOpacity>
+      </View>
             <Text style={{ fontSize: 22, fontWeight: 'bold', marginBottom: 20, textAlign: 'center', color: '#2b7a78' }}>
                 Editar Cita
             </Text>
@@ -504,8 +543,6 @@ const citasConNombres = citasUsuario
                     </Text>
                 </TouchableOpacity>
             )}
-
-            {/* Campo de fecha de fin */}
             <Text>Fecha de fin:</Text>
             {esWeb ? (
                 <input
@@ -529,14 +566,8 @@ const citasConNombres = citasUsuario
                     </Text>
                 </TouchableOpacity>
             )}
-
-            {/* Botones */}
             <TouchableOpacity style={styles.botonGuardar} onPress={guardarEdicion}>
                 <Text style={styles.textoBoton}>GUARDAR CAMBIOS</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.botonCancelar} onPress={() => setModalEditarVisible(false)}>
-                <Text style={styles.textoBoton}>CANCELAR</Text>
             </TouchableOpacity>
         </View>
     </View>
@@ -681,5 +712,12 @@ const styles = StyleSheet.create({
 },
 bloqueCampo: {
     marginBottom: 15,
+},
+iconosAcciones: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  marginLeft: 10,
+  gap: 10,
 },
 });
