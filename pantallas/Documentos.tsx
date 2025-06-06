@@ -22,11 +22,13 @@ import { useNavigation } from '@react-navigation/native';
 import { useUsuario } from '../context/UsuarioContext';
 import * as DocumentPicker from 'expo-document-picker';
 import axios from 'axios';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
 
 const Documentos = () => {
-  const navigation = useNavigation();
   const { usuario } = useUsuario();
-
+type NavigationProp = StackNavigationProp<RootStackParamList, 'Documentos'>;
+const navigation = useNavigation<NavigationProp>();
   const [categorias, setCategorias] = useState([]);
   const [categoriasSeleccionadas, setCategoriasSeleccionadas] = useState([]);
   const [busquedaCategorias, setBusquedaCategorias] = useState('');
@@ -43,6 +45,8 @@ const [modalCategoriaVisible, setModalCategoriaVisible] = useState(false);
 const [nombreCategoria, setNombreCategoria] = useState('');
 const [iconoCategoria, setIconoCategoria] = useState('');
 const [showTooltip, setShowTooltip] = useState<boolean>(false);
+const [descripcionDocumento, setDescripcionDocumento] = useState('');
+
 
 
 
@@ -202,13 +206,21 @@ const guardarCategoria = async () => {
               onChangeText={setBusquedaCategorias}
               style={styles.inputBusqueda}
             />
-            <ScrollView style={styles.scrollCategorias}>
+            <ScrollView
+  style={styles.scrollCategoriasHorizontal}
+  horizontal
+  showsHorizontalScrollIndicator={false}
+>
               {categoriasFiltradas.map(cat => {
                 const seleccionado = categoriasSeleccionadas.includes(cat.id);
                 return (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={styles.checkboxRow}
+                 <TouchableOpacity
+  key={cat.id}
+  style={[
+    styles.checkboxRowHorizontal,
+    seleccionado && styles.checkboxRowSelected,
+  ]}
+
                     onPress={() => {
                       if (seleccionado) {
                         setCategoriasSeleccionadas(categoriasSeleccionadas.filter(c => c !== cat.id));
@@ -218,11 +230,11 @@ const guardarCategoria = async () => {
                     }}
                   >
                     <Ionicons
-                      name={seleccionado ? 'checkbox' : 'square-outline'}
-                      size={20}
-                      color="#000"
-                    />
-                    <Text style={{ marginLeft: 8 }}>{cat.nombre}</Text>
+  name={seleccionado ? 'checkbox' : 'square-outline'}
+  size={18}
+  color="#000"
+/>
+<Text style={styles.checkboxText}>{cat.nombre}</Text>
                   </TouchableOpacity>
                 );
               })}
@@ -338,24 +350,27 @@ const guardarCategoria = async () => {
         ? new Date(item.fechaSubida.seconds * 1000).toLocaleDateString()
         : ''}
     </Text>
-    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 20, marginTop: 10 }}>
-  <Pressable
-    style={({ pressed }) => [styles.iconButton, pressed && { opacity: 1 }]}
-    android_ripple={{ color: 'transparent' }}
+   <View style={{ 
+  flexDirection: 'row', 
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  marginTop: 10,
+  gap: 16
+}}>
+  <TouchableOpacity
     onPress={() =>
       item.urlArchivo
-        ? Linking.openURL(item.urlArchivo)
+        ? window.open(item.urlArchivo, '_blank')
         : Alert.alert('Documento no disponible')
     }
+    style={styles.iconButton}
   >
-    <Ionicons name="eye-outline" size={22} color="#3aafa9" />
-  </Pressable>
+    <Ionicons name="download-outline" size={22} color="#3aafa9" />
+  </TouchableOpacity>
 
   <TouchableOpacity onPress={() => confirmarEliminar(item.id)}>
     <Ionicons name="trash-outline" size={22} color="#e74c3c" />
   </TouchableOpacity>
-
-  
 </View>
   </Pressable>
 )}
@@ -367,8 +382,7 @@ const guardarCategoria = async () => {
   <Text style={styles.botonSubirTexto}>Subir documento</Text>
 </TouchableOpacity>
 
-
-        <Modal
+<Modal
   visible={modalVisible}
   transparent={true}
   animationType="slide"
@@ -376,123 +390,147 @@ const guardarCategoria = async () => {
 >
   <View style={styles.modalContainer}>
     <View style={[styles.modalContent, { paddingTop: 30 }]}>
-      
       <TouchableOpacity
         onPress={() => setModalVisible(false)}
         style={{ position: 'absolute', top: 10, right: 10 }}
       >
         <Ionicons name="close" size={24} color="#666" />
       </TouchableOpacity>
-
-      <Text style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 20, textAlign: 'center' }}>
+            <Text style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 20, textAlign: 'center' }}>
         Añadir archivo
       </Text>
-  <View style={styles.headerCategorias}>
-  <Text style={styles.titulo}>Categorías</Text>
-  <TouchableOpacity onPress={() => setModalCategoriaVisible(true)}>
-    <Ionicons name="add-circle-outline" size={22} color="#2b7a78" />
+    <Text style={styles.formLabel}>Seleccionar archivo:</Text>
+{Platform.OS === 'web' ? (
+  <input
+    type="file"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (file) setArchivoSeleccionado(file);
+    }}
+    style={styles.formInput}
+  />
+) : (
+  <TouchableOpacity
+    style={styles.formFileInput}
+    onPress={async () => {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+      if (!result.canceled) {
+        setArchivoSeleccionado(result.assets[0]);
+      }
+    }}
+  >
+    <Ionicons name="add-circle-outline" size={20} color="#333" />
+    <Text style={{ marginLeft: 8 }}>
+      {archivoSeleccionado?.name || 'Seleccionar archivo'}
+    </Text>
   </TouchableOpacity>
-</View>
+)}
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, borderWidth: 1, borderColor: '#2b7a78', borderRadius: 8, paddingHorizontal: 8 }}>
+<Text style={styles.formLabel}>Descripción:</Text>
+<TextInput
+  placeholder="Breve descripción del documento"
+  value={descripcionDocumento}
+  onChangeText={setDescripcionDocumento}
+  style={styles.formInput}
+/>
+
+<Text style={styles.formLabel}>Categoría:</Text>
+<View style={[styles.formInput, { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 }]}>
   <Ionicons name="search-outline" size={20} color="#2b7a78" />
   <TextInput
     placeholder="Buscar categorías..."
     value={busquedaCategorias}
     onChangeText={setBusquedaCategorias}
-    style={{ flex: 1, paddingVertical: 8, marginLeft: 6, fontSize: 16 }}
+    style={{ flex: 1, paddingVertical: 6, marginLeft: 6, fontSize: 16 }}
   />
 </View>
-
       {busquedaCategorias.trim() !== '' && (
         <ScrollView style={{ maxHeight: 150, marginBottom: 10 }}>
           {categoriasFiltradas.map(cat => (
             <TouchableOpacity
-  key={cat.id}
-  style={{
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    backgroundColor: categoriaSubida === cat.id ? '#3aafa9' : '#eee',
-    marginBottom: 4,
-    borderRadius: 4,
-  }}
-  onPress={() => {
-    setCategoriaSubida(cat.id);
-    setBusquedaCategorias(cat.nombre);
-  }}
->
-  <Text style={{ fontSize: 14, color: categoriaSubida === cat.id ? '#fff' : '#000' }}>
-    {cat.nombre}
-  </Text>
-</TouchableOpacity>
-
+              key={cat.id}
+              style={{
+                paddingVertical: 6,
+                paddingHorizontal: 10,
+                backgroundColor: categoriaSubida === cat.id ? '#3aafa9' : '#eee',
+                marginBottom: 4,
+                borderRadius: 4,
+              }}
+              onPress={() => {
+                setCategoriaSubida(cat.id);
+                setBusquedaCategorias(cat.nombre);
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 14,
+                  color: categoriaSubida === cat.id ? '#fff' : '#000',
+                }}
+              >
+                {cat.nombre}
+              </Text>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
 
       <TouchableOpacity
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          backgroundColor: '#eee',
-          padding: 10,
-          borderRadius: 6,
-          marginBottom: 15,
-        }}
+        style={styles.botonSubir}
         onPress={async () => {
-          const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
-          if (!result.canceled) {
-            setArchivoSeleccionado(result.assets[0]);
-          }
-        }}
-      >
-        <Ionicons name="add-circle-outline" size={20} color="#333" />
-        <Text style={{ marginLeft: 8 }}>
-          {archivoSeleccionado?.name || 'Seleccionar archivo'}
-        </Text>
-      </TouchableOpacity>
+          const servidorLocal = Platform.OS === 'android'
+            ? 'http://192.168.0.26'
+            : 'http://localhost';
 
-      <TouchableOpacity
-        onPress={async () => {
+          const urlUpload = `${servidorLocal}/neurogestion-backend/uploads/upload.php`;
+
           if (!archivoSeleccionado || !categoriaSubida) {
             Alert.alert('Completa todos los campos');
             return;
           }
 
           try {
-            const response = await fetch(archivoSeleccionado.uri);
-            const blob = await response.blob();
-
             const formData = new FormData();
-            formData.append('file', {
-              uri: archivoSeleccionado.uri,
-              name: archivoSeleccionado.name,
-              type: archivoSeleccionado.mimeType || 'application/pdf',
-            } as any);
-            formData.append('upload_preset', 'doc_unsigned');
-            formData.append('folder', 'documentos');
+            if (Platform.OS === 'web') {
+              formData.append('file', archivoSeleccionado);
+            } else {
+              formData.append('file', {
+                uri: archivoSeleccionado.uri,
+                name: archivoSeleccionado.name,
+                type: archivoSeleccionado.mimeType || 'application/pdf',
+              } as any);
+            }
 
-            const res = await axios.post(
-              'https://api.cloudinary.com/v1_1/dkfork2cp/auto/upload',
-              formData,
-              { headers: { 'Content-Type': 'multipart/form-data' } }
-            );
+            const res = await fetch(urlUpload, {
+              method: 'POST',
+              body: formData,
+            });
 
-            const urlArchivo = res.data.secure_url;
+            const texto = await res.text();
+            console.log('Respuesta cruda del backend:', texto);
+
+            let data;
+            try {
+              data = JSON.parse(texto);
+            } catch (err) {
+              throw new Error('Respuesta no es JSON válido');
+            }
+
+            if (!data.url) throw new Error('No se recibió URL');
 
             await addDoc(collection(db, 'documentos'), {
               titulo: archivoSeleccionado.name,
-              descripcion: 'Documento subido por el usuario',
+              descripcion: descripcionDocumento,
               categoriaId: categoriaSubida,
               fechaSubida: new Date(),
-              urlArchivo,
-              usuario,
+              urlArchivo: data.url,
+              usuarioId: usuario?.id,
               visibleParaUsuarios: true,
             });
 
             Alert.alert('Éxito', `El archivo "${archivoSeleccionado.name}" ha sido subido correctamente`);
             setModalVisible(false);
             setArchivoSeleccionado(null);
+            setDescripcionDocumento('');
             setCategoriaSubida('');
             setBusquedaCategorias('');
           } catch (error) {
@@ -501,14 +539,13 @@ const guardarCategoria = async () => {
           }
         }}
       >
-        <TouchableOpacity style={styles.botonSubir}>
-  <Ionicons name="cloud-upload-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-  <Text style={styles.botonSubirTexto}>Subir documento</Text>
-</TouchableOpacity>
+        <Ionicons name="cloud-upload-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.botonSubirTexto}>Subir documento</Text>
       </TouchableOpacity>
     </View>
   </View>
 </Modal>
+
 <Modal visible={modalCategoriaVisible} transparent animationType="fade">
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
@@ -612,7 +649,7 @@ const styles = StyleSheet.create({
   },
    inputBusqueda: {
     borderWidth: 1,
-    borderColor: '#2b7a78',  // color corporativo
+    borderColor: '#2b7a78',  
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -739,17 +776,9 @@ modalContainer: {
   alignItems: 'center',
   backgroundColor: 'rgba(0,0,0,0.4)',
 },
-modalContent: {
-  backgroundColor: '#fff',
-  padding: 20,
-  borderRadius: 8,
-  width: '80%',
-  maxHeight: '80%',
-},
   iconButton: {
     padding: 8,
     borderRadius: 50,
-    backgroundColor: 'rgba(0,0,0,0.05)',
     marginHorizontal: 10,
   },
   iconButtonHover: {
@@ -794,7 +823,7 @@ cardHover: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#27ae60',  // verde vibrante
+    backgroundColor: '#27ae60',  
     paddingVertical: 14,
     paddingHorizontal: 24,
     borderRadius: 10,
@@ -811,13 +840,6 @@ cardHover: {
     fontWeight: 'bold',
     fontSize: 18,
   },
-input: {
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 6,
-  padding: 10,
-  marginBottom: 10,
-},
 headerCategorias: {
   flexDirection: 'row',
   alignItems: 'center',
@@ -850,28 +872,6 @@ botonAgregarCategoria: {
     color: 'white',
     fontSize: 12,
   },
-
-  scrollCategoriasHorizontal: {
-    maxHeight: 50,
-  },
-
-  checkboxRowHorizontal: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: '#eee',
-  },
-
-  checkboxRowSelected: {
-    backgroundColor: '#d0f0f6',
-  },
-
-  checkboxText: {
-    marginLeft: 8,
-  },
   cardCategorias: {
     flex: 2,
     maxHeight: 250,
@@ -883,6 +883,100 @@ botonAgregarCategoria: {
     maxHeight: 250,
     padding: 15,
   },
+  modalContent: {
+  backgroundColor: '#fff',
+  padding: 20,
+  borderRadius: 12,
+  width: 400,
+  maxHeight: '90%',
+  alignItems: 'center',
+  alignSelf: 'center',
+},
+
+input: {
+  width: '100%',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 16,
+  marginBottom: 12,
+},
+
+descripcionInput: {
+  width: '100%',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 16,
+  marginBottom: 12,
+  textAlignVertical: 'top',
+},
+
+archivoInput: {
+  width: '100%',
+  padding: 10,
+  borderRadius: 8,
+  borderColor: '#ccc',
+  borderWidth: 1,
+  marginBottom: 12,
+  backgroundColor: '#f5f5f5',
+  justifyContent: 'center',
+},
+formLabel: {
+  alignSelf: 'flex-start',
+  fontWeight: 'bold',
+  fontSize: 14,
+  marginBottom: 4,
+  color: '#333',
+},
+
+formInput: {
+  width: '100%',
+  borderWidth: 1,
+  borderColor: '#ccc',
+  borderRadius: 8,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 16,
+  marginBottom: 12,
+},
+
+formFileInput: {
+  width: '100%',
+  padding: 10,
+  borderRadius: 8,
+  borderColor: '#ccc',
+  borderWidth: 1,
+  marginBottom: 12,
+  backgroundColor: '#f5f5f5',
+  justifyContent: 'center',
+},
+scrollCategoriasHorizontal: {
+  maxHeight: 50,
+},
+
+checkboxRowHorizontal: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginRight: 12,
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 6,
+  backgroundColor: '#eee',
+},
+
+checkboxRowSelected: {
+  backgroundColor: '#d0f0f6',
+},
+
+checkboxText: {
+  marginLeft: 8,
+},
+
 });
 
 export default Documentos;
