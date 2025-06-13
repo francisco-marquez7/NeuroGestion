@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   ImageBackground,
-  Dimensions,
   Modal, Pressable
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -18,20 +17,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useUsuario } from '../context/UsuarioContext';
 import { actualizarUsuario, obtenerNombreEmpresaPorId } from '../firebase/firestoreService';
 import { cerrarSesion } from '../firebase/auth';
-
-
-
-
-const { width } = Dimensions.get('window');
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../App';
 
 export default function Perfil() {
-  const navigation = useNavigation();
   const { usuario, setUsuario } = useUsuario();
   const [editando, setEditando] = useState(false);
   const [nombre, setNombre] = useState(usuario?.nombre || '');
   const [apellidos, setApellidos] = useState(usuario?.apellidos || '');
   const [empresaNombre, setEmpresaNombre] = useState('');
 const [modalCerrarSesionVisible, setModalCerrarSesionVisible] = useState(false);
+type NavigationProp = StackNavigationProp<RootStackParamList, 'Perfil'>;
+const navigation = useNavigation<NavigationProp>();
 
 const manejarCerrarSesion = () => {
   setModalCerrarSesionVisible(true);

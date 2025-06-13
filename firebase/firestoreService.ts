@@ -131,6 +131,7 @@ export const deleteUsuario = async (id: string) => {
   await deleteDoc(usuarioRef);
 };
 
+
 // EMPRESAS
 
 export const getEmpresas = async () => {
@@ -149,3 +150,4 @@ export const updateEmpresa = async (id: string, empresaData: any) => {
 export const deleteEmpresa = async (id: string) => {
   await deleteDoc(doc(db, 'empresas', id));
 };
+

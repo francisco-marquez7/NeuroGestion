@@ -15,15 +15,14 @@ import {
 } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import {
-  buscarUsuarioPorEmail,
   getUsuarios,
   addUsuario,
   updateUsuario,
-  deleteUsuario,
   getEmpresas,
   addEmpresa,
   updateEmpresa,
-  deleteEmpresa,
+  deleteUsuario as deleteUsuarioFromDB,
+  deleteEmpresa as deleteEmpresaFromDB,
 } from '../firebase/firestoreService';
 import { Picker } from '@react-native-picker/picker';
 import { useUsuario } from '../context/UsuarioContext';
@@ -39,11 +38,12 @@ import {
   CartesianGrid,
   Bar
 } from 'recharts';
-
+import DateTimePicker from '@react-native-community/datetimepicker';
 const screenWidth = Dimensions.get('window').width;
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA336A'];
-const Gestion = (navigation) => {
+
+const Gestion = ({ navigation }) => {
     const { usuario } = useUsuario();
   // Estados
   const [usuarios, setUsuarios] = useState([]);
@@ -55,6 +55,8 @@ const Gestion = (navigation) => {
   const [editUser, setEditUser] = useState(null);
   const [editEmpresa, setEditEmpresa] = useState(null);
 
+  const [fechaAlta, setFechaAlta] = useState(new Date());
+const [mostrarCalendario, setMostrarCalendario] = useState(false);
   
   // Formularios
   const [formUser, setFormUser] = useState({
@@ -100,7 +102,7 @@ useEffect(() => {
 if (!usuario) {
     return (
       <View style={styles.centered}>
-        <Text style={{ color: 'white' }}>Acceso denegado. Usuario no encontrado.</Text>
+        <Text style={{ color: 'white' }}>Acceso denegado</Text>
       </View>
     );
   }
@@ -134,32 +136,38 @@ if (!usuario) {
     }
     setModalVisibleUser(true);
   };
-  const openModalEmpresa = (empresa = null) => {
-    if (empresa) {
-      setEditEmpresa(empresa);
-      setFormEmpresa({
-        nombreEmpresa: empresa.nombreEmpresa || '',
-        direccion: empresa.direccion || '',
-        email: empresa.email || '',
-        telefono: empresa.telefono || '',
-        sector: empresa.sector || '',
-        fechaAlta: empresa.fechaAlta
-          ? new Date(empresa.fechaAlta.seconds * 1000).toISOString().split('T')[0]
-          : '',
-      });
-    } else {
-      setEditEmpresa(null);
-      setFormEmpresa({
-        nombreEmpresa: '',
-        direccion: '',
-        email: '',
-        telefono: '',
-        sector: '',
-        fechaAlta: '',
-      });
-    }
-    setModalVisibleEmpresa(true);
-  };
+const openModalEmpresa = (empresa = null) => {
+  if (empresa) {
+    const fecha = empresa.fechaAlta?.seconds
+      ? new Date(empresa.fechaAlta.seconds * 1000)
+      : new Date();
+
+    setEditEmpresa(empresa);
+    setFormEmpresa({
+      nombreEmpresa: empresa.nombreEmpresa || '',
+      direccion: empresa.direccion || '',
+      email: empresa.email || '',
+      telefono: empresa.telefono || '',
+      sector: empresa.sector || '',
+      fechaAlta: fecha.toISOString().split('T')[0],
+    });
+    setFechaAlta(fecha); 
+  } else {
+    const hoy = new Date();
+    setEditEmpresa(null);
+    setFormEmpresa({
+      nombreEmpresa: '',
+      direccion: '',
+      email: '',
+      telefono: '',
+      sector: '',
+      fechaAlta: hoy.toISOString().split('T')[0],
+    });
+    setFechaAlta(hoy); 
+  }
+
+  setModalVisibleEmpresa(true);
+};
 
 const saveUser = async () => {
   const { nombre, apellidos, email, empresaId, rol } = formUser;
@@ -197,7 +205,7 @@ const saveEmpresa = async () => {
       email,
       telefono,
       sector,
-      fechaAlta: { seconds: Math.floor(fecha.getTime() / 1000) }, // o guarda ISO y ajusta en la UI
+      fechaAlta: { seconds: Math.floor(fecha.getTime() / 1000) }, 
     };
     if (editEmpresa) {
       await updateEmpresa(editEmpresa.id, empresaData);
@@ -206,63 +214,44 @@ const saveEmpresa = async () => {
     }
     setModalVisibleEmpresa(false);
     const empresasData = await getEmpresas();
-    setEmpresas(empresasData); // Actualizar empresas correctamente
+    setEmpresas(empresasData);
   } catch (error) {
     Alert.alert('Error', 'Error guardando empresa: ' + error.message);
   }
 };
 
-const confirmarEliminar = (id: string) => {
-  Alert.alert(
-    'Confirmar eliminación',
-    '¿Eliminar usuario?',
-    [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: () => borrarUsuario(id),
-      },
-    ],
-    { cancelable: true }
-  );
-};
 
-const borrarUsuario = async (id: string) => {
+const confirmarEliminarUsuario = async (id: string) => {
+  const confirmar = window.confirm('¿Desea eliminar este usuario?');
+  if (!confirmar) return;
+
   try {
-    await deleteUsuario(id);
+    await deleteUsuarioFromDB(id);
     const usuariosData = await getUsuarios();
     setUsuarios(usuariosData);
-    console.log('Usuario eliminado:', id);
-  } catch (error: any) {
-    Alert.alert('Error', 'No se pudo eliminar usuario: ' + error.message);
+    window.alert('Usuario eliminado correctamente');
+  } catch (error) {
+    window.alert('Error al eliminar usuario: ' + error.message);
+  }
+};
+
+const confirmarEliminarEmpresa = async (id: string) => {
+  const confirmar = window.confirm('¿Desea eliminar esta empresa?');
+  if (!confirmar) return;
+
+  try {
+    await deleteEmpresaFromDB(id);
+    const empresasData = await getEmpresas();
+    setEmpresas(empresasData);
+    const usuariosData = await getUsuarios();
+    setUsuarios(usuariosData);
+    window.alert('Empresa eliminada correctamente');
+  } catch (error) {
+    window.alert('Error al eliminar empresa: ' + error.message);
   }
 };
 
 
-
-const deleteEmpresa = (id) => {
-  Alert.alert('Confirmar eliminación', '¿Eliminar empresa y sus usuarios?', [
-    { text: 'Cancelar', style: 'cancel' },
-    {
-      text: 'Eliminar',
-      style: 'destructive',
-      onPress: async () => {
-        try {
-          // Aquí idealmente eliminarías usuarios asociados, pero no tienes función batch en servicio
-          // Por simplicidad elimina empresa directo:
-          await deleteEmpresa(id);
-          const empresasData = await getEmpresas();
-          setEmpresas(empresasData);
-          const usuariosData = await getUsuarios();
-          setUsuarios(usuariosData);
-        } catch (error) {
-          Alert.alert('Error', 'No se pudo eliminar empresa: ' + error.message);
-        }
-      },
-    },
-  ]);
-};
 const usuariosFiltrados = usuarios.filter((u) => {
   const empresaNombre = empresas.find((e) => e.id === u.empresaId)?.nombreEmpresa || '';
   const filtro = filtroUsuarios.toLowerCase();
@@ -305,15 +294,11 @@ const usuariosFiltrados = usuarios.filter((u) => {
     return 0;
   });
 
-  // Datos gráficos
-
-  // Usuarios por empresa
   const usuariosPorEmpresa = empresas.map((emp) => ({
     nombreEmpresa: emp.nombreEmpresa,
     usuarios: usuarios.filter((u) => u.empresaId === emp.id).length,
   }));
 
-  // Distribución usuarios por rol
   const rolesCount = usuarios.reduce((acc, u) => {
     acc[u.rol] = (acc[u.rol] || 0) + 1;
     return acc;
@@ -323,7 +308,6 @@ const usuariosFiltrados = usuarios.filter((u) => {
     value,
   }));
 
-  // Empresas por sector
   const empresasPorSectorCount = empresas.reduce((acc, e) => {
     acc[e.sector] = (acc[e.sector] || 0) + 1;
     return acc;
@@ -375,30 +359,30 @@ const usuariosFiltrados = usuarios.filter((u) => {
   return new Date(fecha).toLocaleDateString();
 };
 
-  // Render usuario tabla
-  const renderUsuario = ({ item }) => (
+  const renderUsuario = ({ item }) => {
+  const empresaNombre = empresas.find((e) => e.id === item.empresaId)?.nombreEmpresa;
+  
+  return (
     <View style={styles.row}>
       <Text style={[styles.cell, { flex: 1 }]}>{item.nombre}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.apellidos}</Text>
       <Text style={[styles.cell, { flex: 2 }]}>{item.email}</Text>
-      <Text style={[styles.cell, { flex: 1 }]}>{formatFecha(item.fechaAlta)}</Text>
-      <Text style={[styles.cell, { flex: 1 }]}>
-        {empresas.find((e) => e.id === item.empresaId)?.nombreEmpresa || '-'}
+      <Text style={[styles.cell, { flex: 1}]}>
+        {empresaNombre || ''}
       </Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.rol}</Text>
-     <View style={[styles.cell, { flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
-  <TouchableOpacity onPress={() => openModalUser(item)} style={{ marginRight: 12 }}>
-    <Ionicons name="pencil-outline" size={22} color="#007bff" />
-  </TouchableOpacity>
-  <TouchableOpacity onPress={() => confirmarEliminar(item.id)}>
-  <Ionicons name="trash-outline" size={22} color="#dc3545" />
-</TouchableOpacity>
-
-</View>
+      <View style={[styles.cell, { flex: 1, flexDirection: 'row', justifyContent: 'center' }]}>
+        <TouchableOpacity onPress={() => openModalUser(item)} style={{ marginRight: 12 }}>
+          <Ionicons name="pencil-outline" size={22} color="#007bff" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => confirmarEliminarUsuario(item.id)}>
+          <Ionicons name="trash-outline" size={22} color="#dc3545" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
+};
 
-  // Render empresa tabla
   const renderEmpresa = ({ item }) => (
     <View style={styles.row}>
       <Text style={[styles.cell, { flex: 2 }]}>{item.nombreEmpresa}</Text>
@@ -407,8 +391,12 @@ const usuariosFiltrados = usuarios.filter((u) => {
       <Text style={[styles.cell, { flex: 1 }]}>{item.telefono}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>{item.sector}</Text>
       <Text style={[styles.cell, { flex: 1 }]}>
-        {item.fechaAlta ? new Date(item.fechaAlta.seconds * 1000).toLocaleDateString() : '-'}
-      </Text>
+  {item.fechaAlta
+    ? item.fechaAlta.seconds
+      ? new Date(item.fechaAlta.seconds * 1000).toLocaleDateString()
+      : new Date(item.fechaAlta).toLocaleDateString()
+    : '-'}
+</Text>
       <Text style={[styles.cell, { flex: 1 }]}>
         {usuarios.filter((u) => u.empresaId === item.id).length}
       </Text>
@@ -416,9 +404,9 @@ const usuariosFiltrados = usuarios.filter((u) => {
   <TouchableOpacity onPress={() => openModalEmpresa(item)} style={{ marginRight: 12 }}>
     <Ionicons name="pencil-outline" size={22} color="#007bff" />
   </TouchableOpacity>
-  <TouchableOpacity onPress={() => deleteEmpresa(item.id)}>
-    <Ionicons name="trash-outline" size={22} color="#dc3545" />
-  </TouchableOpacity>
+    <TouchableOpacity onPress={() => confirmarEliminarEmpresa(item.id)}>
+      <Ionicons name="trash-outline" size={22} color="#dc3545" />
+    </TouchableOpacity>
 </View>
     </View>
   );
@@ -430,7 +418,7 @@ const usuariosFiltrados = usuarios.filter((u) => {
                 <Ionicons name="arrow-back-outline" size={24} color="#fff" />
                 <Text style={styles.navText}>Volver</Text>
               </TouchableOpacity>
-              <Text style={styles.navTitle}>Gestión</Text>
+              <Text style={styles.tituloPrincipal}>Gestión</Text>
               <TouchableOpacity style={styles.navItem} onPress={() => navigation.navigate('Perfil')}>
                 <Text style={styles.navText}>{usuario?.nombre || 'Perfil'}</Text>
                 <Ionicons name="person-circle-outline" size={28} color="#fff" />
@@ -483,8 +471,10 @@ const usuariosFiltrados = usuarios.filter((u) => {
     </Text>
   </TouchableOpacity>
 
-<TouchableOpacity style={[styles.cell, { flex: 2 }]} onPress={() => ordenarUsuarios('empresa')}>
-  <Text style={[styles.cell, { flex: 1, fontWeight: 'bold', color: '#444' }]}>Empresa</Text>
+<TouchableOpacity style={[styles.cell, { flex: 1 }]} onPress={() => ordenarUsuarios('empresa')}>
+  <Text style={{ fontWeight: 'bold', color: '#444'}}>
+    Empresa {ordenUsuarios.campo === 'empresa' ? (ordenUsuarios.asc ? '▲' : '▼') : ''}
+  </Text>
 </TouchableOpacity>
 
   <TouchableOpacity style={[styles.cell, { flex: 1 }]} onPress={() => ordenarUsuarios('rol')}>
@@ -506,7 +496,6 @@ const usuariosFiltrados = usuarios.filter((u) => {
             />
           </View>
 
-          {/* Empresas */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Empresas</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -551,7 +540,7 @@ const usuariosFiltrados = usuarios.filter((u) => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Gráficos</Text>
-
+    <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Usuarios por Empresa</Text>
             <View style={{ width: screenWidth * 0.9, height: 250 }}>
               <BarChart
@@ -568,8 +557,8 @@ const usuariosFiltrados = usuarios.filter((u) => {
                 <Bar dataKey="usuarios" fill="#8884d8" />
               </BarChart>
             </View>
-
-            {/* Distribución usuarios por rol */}
+            </View>
+          <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Distribución Usuarios por Rol</Text>
             <View style={{ width: screenWidth * 0.9, height: 250, alignItems: 'center' }}>
               <PieChart width={screenWidth * 0.9} height={250}>
@@ -591,7 +580,8 @@ const usuariosFiltrados = usuarios.filter((u) => {
                 <Legend />
               </PieChart>
             </View>
-
+            </View>
+            <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Empresas por Sector</Text>
             <View style={{ width: screenWidth * 0.9, height: 250 }}>
               <BarChart
@@ -608,28 +598,42 @@ const usuariosFiltrados = usuarios.filter((u) => {
                 <Bar dataKey="cantidad" fill="#82ca9d" />
               </BarChart>
             </View>
+            </View>
           </View>
         </ScrollView>
 
         <Modal visible={modalVisibleUser} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>{editUser ? 'Editar Usuario' : 'Añadir Usuario'}</Text>
+              <TouchableOpacity
+  onPress={() => setModalVisibleUser(false)}
+  style={{ position: 'absolute', top: 10, right: 10 }}
+>
+  <Ionicons name="close" size={24} color="black" />
+</TouchableOpacity>
+
+              <Text style={[styles.modalTitle, { textAlign: 'center' }]}>
+  {editUser ? 'Editar Usuario' : 'Añadir Usuario'}
+</Text>
+
               <ScrollView>
+                <Text style={styles.label}>Nombre:</Text>
                 <TextInput
-                  placeholder="Nombre"
+                  placeholder="Escribe el nombre"
                   style={styles.input}
                   value={formUser.nombre}
                   onChangeText={(t) => onChangeUser('nombre', t)}
                 />
+                <Text style={styles.label}>Apellidos:</Text>
                 <TextInput
-                  placeholder="Apellidos"
+                  placeholder="Escribe el/los apellidos"
                   style={styles.input}
                   value={formUser.apellidos}
                   onChangeText={(t) => onChangeUser('apellidos', t)}
                 />
+                <Text style={styles.label}>Email:</Text>
                 <TextInput
-                  placeholder="Email"
+                  placeholder="Escribe el email"
                   style={styles.input}
                   value={formUser.email}
                   onChangeText={(t) => onChangeUser('email', t)}
@@ -637,7 +641,7 @@ const usuariosFiltrados = usuarios.filter((u) => {
                   autoCapitalize="none"
                 />
 
-                <Text style={{ marginBottom: 4, fontWeight: '600' }}>Empresa</Text>
+                <Text style={{ marginBottom: 4, fontWeight: '600' }}>Empresa:</Text>
                 <Picker
                   selectedValue={formUser.empresaId}
                   onValueChange={(itemValue) => onChangeUser('empresaId', itemValue)}
@@ -660,18 +664,11 @@ const usuariosFiltrados = usuarios.filter((u) => {
   <Picker.Item label="company_admin" value="company_admin" />
   <Picker.Item label="profesional" value="profesional" />
                 </Picker>
-
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity style={styles.btnSave} onPress={saveUser}>
-                    <Text style={{ color: 'white' }}>Guardar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.btnCancel}
-                    onPress={() => setModalVisibleUser(false)}
-                  >
-                    <Text style={{ color: 'black' }}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
+                <View style={{ alignItems: 'center', marginTop: 20 }}>
+  <TouchableOpacity style={styles.btnGuardarFull} onPress={saveUser}>
+    <Text style={styles.btnGuardarTexto}>Guardar</Text>
+  </TouchableOpacity>
+</View>
               </ScrollView>
             </View>
           </View>
@@ -679,59 +676,100 @@ const usuariosFiltrados = usuarios.filter((u) => {
         <Modal visible={modalVisibleEmpresa} animationType="slide" transparent={true}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>{editEmpresa ? 'Editar Empresa' : 'Añadir Empresa'}</Text>
+              <TouchableOpacity
+  onPress={() => setModalVisibleEmpresa(false)}
+  style={{ position: 'absolute', top: 10, right: 10 }}
+>
+  <Ionicons name="close" size={24} color="black" />
+</TouchableOpacity>
+
+              <Text style={[styles.modalTitle, { textAlign: 'center' }]}>{editEmpresa ? 'Editar Empresa' : 'Añadir Empresa'}</Text>
               <ScrollView>
+                <Text style={styles.label}>Nombre Empresa:</Text>
                 <TextInput
-                  placeholder="Nombre Empresa"
+                  placeholder="Escriba el nombre de la empresa"
                   style={styles.input}
                   value={formEmpresa.nombreEmpresa}
                   onChangeText={(t) => onChangeEmpresa('nombreEmpresa', t)}
                 />
+                <Text style={styles.label}>Direccion:</Text>
                 <TextInput
-                  placeholder="Dirección"
+                  placeholder="Escriba la direccion Calle,numero"
                   style={styles.input}
                   value={formEmpresa.direccion}
                   onChangeText={(t) => onChangeEmpresa('direccion', t)}
                 />
+                <Text style={styles.label}>Email:</Text>
                 <TextInput
-                  placeholder="Email"
+                  placeholder="Escriba el email"
                   style={styles.input}
                   value={formEmpresa.email}
                   onChangeText={(t) => onChangeEmpresa('email', t)}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
+                <Text style={styles.label}>Telefono:</Text>
                 <TextInput
-                  placeholder="Teléfono"
+                  placeholder="Introduzca el telefono"
                   style={styles.input}
                   value={formEmpresa.telefono}
                   onChangeText={(t) => onChangeEmpresa('telefono', t)}
                   keyboardType="phone-pad"
                 />
+                <Text style={styles.label}>Sector:</Text>
                 <TextInput
-                  placeholder="Sector"
+                  placeholder="Selecciona el sector de su empresa"
                   style={styles.input}
                   value={formEmpresa.sector}
                   onChangeText={(t) => onChangeEmpresa('sector', t)}
                 />
-                <TextInput
-                  placeholder="Fecha Alta (YYYY-MM-DD)"
-                  style={styles.input}
-                  value={formEmpresa.fechaAlta}
-                  onChangeText={(t) => onChangeEmpresa('fechaAlta', t)}
-                />
+                <Text style={styles.label}>Fecha de Alta:</Text>
 
-                <View style={styles.modalButtons}>
-                  <TouchableOpacity style={styles.btnSave} onPress={saveEmpresa}>
-                    <Text style={{ color: 'white' }}>Guardar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.btnCancel}
-                    onPress={() => setModalVisibleEmpresa(false)}
-                  >
-                    <Text style={{ color: 'black' }}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
+{Platform.OS === 'web' ? (
+  <input
+    type="date"
+    value={formEmpresa.fechaAlta}
+    onChange={(e) => onChangeEmpresa('fechaAlta', e.target.value)}
+    style={{
+      borderWidth: 1,
+      borderColor: '#ccc',
+      borderRadius: 6,
+      padding: 8,
+      marginBottom: 12,
+      fontSize: 16,
+      width: '100%',
+    }}
+  />
+) : (
+  <>
+    <TouchableOpacity
+      style={styles.input}
+      onPress={() => setMostrarCalendario(true)}
+    >
+      <Text>{formEmpresa.fechaAlta ? new Date(formEmpresa.fechaAlta).toLocaleDateString() : 'Selecciona fecha'}</Text>
+    </TouchableOpacity>
+
+    {mostrarCalendario && (
+      <DateTimePicker
+        value={fechaAlta}
+        mode="date"
+        display="default"
+        onChange={(_, selectedDate) => {
+          setMostrarCalendario(false);
+          if (selectedDate) {
+            setFechaAlta(selectedDate);
+            onChangeEmpresa('fechaAlta', selectedDate.toISOString().split('T')[0]);
+          }
+        }}
+      />
+    )}
+  </>
+)}
+<View style={{ alignItems: 'center', marginTop: 20 }}>
+  <TouchableOpacity style={styles.btnGuardarFull} onPress={saveEmpresa}>
+    <Text style={styles.btnGuardarTexto}>Guardar</Text>
+  </TouchableOpacity>
+</View>
               </ScrollView>
             </View>
           </View>
@@ -824,13 +862,14 @@ cell: {
     borderRadius: 4,
   },
 
-  chartTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 20,
-    color: '#fff',
-    marginBottom: 10,
-  },
+chartTitle: {
+  fontSize: 20,
+  fontWeight: '600',
+  marginTop: 20,
+  marginBottom: 10,
+  color: '#2b7a78', 
+  textAlign: 'center',
+},
 
   centered: {
     flex: 1,
@@ -891,6 +930,53 @@ cell: {
     paddingHorizontal: 20,
     borderRadius: 6,
   },
+  tituloPrincipal: {
+  color: '#fff',
+  fontSize: 32,
+  fontWeight: 'bold',
+  textAlign: 'center',
+  textShadowColor: '#000',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 3,
+  letterSpacing: 1,
+  flex: 1,
+},
+label: {
+  fontWeight: '600',
+  marginBottom: 4,
+  marginTop: 8,
+},
+chartCard: {
+  backgroundColor: 'rgba(255,255,255,0.95)',
+  borderRadius: 12,
+  padding: 16,
+  marginBottom: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 3,
+},
+btnGuardarFull: {
+  backgroundColor: '#2b7a78',
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  borderRadius: 12,
+  width: '100%',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+  elevation: 4,
+},
+btnGuardarTexto: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: '600',
+  letterSpacing: 0.5,
+},
+
 });
 
 export default Gestion;
