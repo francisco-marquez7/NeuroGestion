@@ -1,18 +1,14 @@
-import { app } from './firebaseConfig';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   signOut,
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   sendPasswordResetEmail,
 } from 'firebase/auth';
-import { getFirestore, collection, getDocs, addDoc 
- } from 'firebase/firestore';
-import { Usuario } from '../context/UsuarioContext';
 
-const auth = getAuth(app);
-const db = getFirestore(app);
+import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { Usuario } from '../context/UsuarioContext';
+import { auth, db } from './firebaseConfig'; // ✅ auth y db ya inicializados
 
 export const iniciarSesion = async (email: string, password: string): Promise<Usuario> => {
   // Autenticar con Firebase Auth
@@ -31,19 +27,18 @@ export const iniciarSesion = async (email: string, password: string): Promise<Us
   );
 
   if (!docUsuario) {
-  // Crear usuario básico en Firestore si no existe
-  const nuevoUsuario: Omit<Usuario, 'id'> = {
-    email: emailLimpio,
-    nombre: 'Nuevo usuario',
-    apellidos: '',
-    empresaId: '',
-    rol: 'profesional', 
-  };
+    // Crear usuario básico en Firestore si no existe
+    const nuevoUsuario: Omit<Usuario, 'id'> = {
+      email: emailLimpio,
+      nombre: 'Nuevo usuario',
+      apellidos: '',
+      empresaId: '',
+      rol: 'profesional',
+    };
 
-  const docRef = await addDoc(collection(db, 'usuarios'), nuevoUsuario);
-  return { id: docRef.id, ...nuevoUsuario };
-}
-
+    const docRef = await addDoc(collection(db, 'usuarios'), nuevoUsuario);
+    return { id: docRef.id, ...nuevoUsuario };
+  }
 
   // Construir objeto Usuario completo
   const usuario: Usuario = {
@@ -53,7 +48,6 @@ export const iniciarSesion = async (email: string, password: string): Promise<Us
 
   return usuario;
 };
-
 
 export const cerrarSesion = async () => {
   return await signOut(auth);
@@ -76,4 +70,3 @@ export const recuperarContraseña = async (email: string) => {
     throw new Error(error.message);
   }
 };
-

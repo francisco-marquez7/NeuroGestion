@@ -1,6 +1,5 @@
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, updateDoc, getDoc, query, where, doc } from 'firebase/firestore';
-import { app} from './firebaseConfig';
-
+import { app } from './firebaseConfig'; 
 export const db = getFirestore(app);
 export { agregarUsuario as addUsuario };
 export { actualizarUsuario as updateUsuario };
